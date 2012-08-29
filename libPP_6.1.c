@@ -1340,11 +1340,16 @@ float NMax_Metabolic;
 					s[vecino.i][vecino.j]=0;
 					//pCrecer=(2.0*parametros[es->TIPO[i][j]].Coagulation*((float)s[i][j])*exp(-pow((float)s[i][j]/(float)max_tamano,2.0)))/es->Max_Metabolic;
 					//pCrecer=(Coagulation1 - (parametros[es->TIPO[i][j]].Coagulation)*((float)(2*max_tamano))*pow((float)s[i][j]/((float)(2*max_tamano)),3.0))/es->Max_Metabolic;
-					if(s[i][j]<=max_tamano)
+					if(s[i][j]<=(max_tamano-5))
 					{
 						pCrecer = (parametros[es->TIPO[i][j]].Coagulation*((float)(s[i][j])))/es->Max_Metabolic;
 					}else{
+						if(s[i][j]>=(max_tamano+40))
+						{
 						pCrecer = (parametros[es->TIPO[i][j]].Coagulation*((float)(2*max_tamano-s[i][j])))/es->Max_Metabolic;
+						}else{
+							pCrecer = (parametros[es->TIPO[i][j]].Coagulation*((float)(max_tamano-5)))/es->Max_Metabolic;
+						}
 					}
 		
 						if(pCrecer>0.0 && Rand<=(pDead + pCreacion + pCrecer))

@@ -11,8 +11,8 @@ Copyright 2012 Jorge Velazquez
 #include <sys/shm.h>
 
 #include <omp.h> 
-#include "libPP_5.0.h"
-#include "EntSalArb_MP.h"
+#include "libPP_6.1.h"
+#include "EntSalArb_MP_Comp.h"
 #include "ControlDinamico.h"
 
 interfase *flags;

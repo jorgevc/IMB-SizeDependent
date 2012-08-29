@@ -20,14 +20,14 @@ int NDX=500;
 float fracON = 1.0;
 int NDY=NDX;
 int T_max = 10000;
-int NoEnsambles=8;
+int NoEnsambles=4;
 
 float Birth1= 0.0;
-float Coagulation1= 4.0; //Brown usa: 0.00002; 
+float Coagulation1= 2.0; //Brown usa: 0.00002; 
 float CoaIntra= 0.0000; //Modelo J-C 0.0008
 float Dead1= 0.0;
 int RadioBirth1= 10;
-int RadioCoa1= 60;
+int RadioCoa1= 10;
 int RadioCoaIntra1= 0;  //Modelo Heteromyopia 20
 
 int CantidadEspecies=1;
