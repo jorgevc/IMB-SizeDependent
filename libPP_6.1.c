@@ -1855,3 +1855,114 @@ void ResetFloat1D_MP(Float1D_MP *ARRAY)
 		
 return;
 }
+
+void ActualizaUniv(estado *es, int N, model *modelo)
+{
+float Rand; 
+float pDead, pCreacion, pCoagulation1, Dead, Birth, CoagulationIntra, Coagulation1, pMetabolic;
+sitio vecino;
+int **s = es->s;
+int NDX = es->NDX;
+int NDY = es->NDY;
+int i=es->SO[N].i;
+int j=es->SO[N].j;
+sitio *SO = es->SO;
+int radioCre;
+int radioCoa;
+	
+int max_tamano = 50;
+
+float NMax_Metabolic; 
+	
+	Rand = F_JKISS();
+	
+	
+	Dead=parametros[es->TIPO[i][j]].Dead; // modelo neutral y J-C
+	Birth=parametros[es->TIPO[i][j]].Birth;
+	CoagulationIntra=parametros[es->TIPO[i][j]].CoagulationIntra;
+
+	Coagulation1 = ((modelo->CoaFact)*(pow((float)(s[i][j]),modelo->CoaExp)));
+	
+	pCreacion = Birth/es->Max_Metabolic;
+	pDead=Dead/es->Max_Metabolic;
+	pCoagulation1 = Coagulation1/es->Max_Metabolic;
+	
+	if(Rand<=pDead) //aniquilacion
+	{	
+		s[i][j]=0;
+		SO[N]=SO[(es->ON)];
+		es->INDICE[SO[es->ON].i][SO[es->ON].j]=N;
+		(es->ON)--;	
+		es->TIPO[i][j]=0;
+		
+	}else{  //creation o coagulacion o nada
+		if(Rand<=(pDead + pCreacion)) //creation
+		{
+			radioCre=parametros[es->TIPO[i][j]].RadioBirth;
+			EligeUniforme(i,j,radioCre,&vecino);
+			
+			if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
+			if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
+			if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
+			if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
+			
+			if(s[vecino.i][vecino.j]<=0)
+			{
+				s[vecino.i][vecino.j]=1;
+				(es->ON)++;
+				SO[(es->ON)]=vecino;
+				es->INDICE[vecino.i][vecino.j]=(es->ON);
+				es->TIPO[vecino.i][vecino.j]=es->TIPO[i][j];
+			}
+			
+		}else{ //como o nada
+			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
+			{	
+				radioCoa=parametros[es->TIPO[i][j]].RadioCoa;
+				 EligeUniforme(i,j,radioCoa,&vecino);
+				if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
+				if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
+				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
+				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
+				
+				pMetabolic=(modelo->MetFact*pow(s[i][j],modelo->MetExp))/es->Max_Metabolic;
+				if(Rand<=(pDead + pCreacion + pMetabolic))  //Cuento las necesidades metabolicas.
+				{
+					es->AGE[i][j]++;
+				}
+				
+				if(s[vecino.i][vecino.j]<0)  //Si hay comida, como. 
+				{
+					s[vecino.i][vecino.j]=0;
+						if(es->AGE[i][j]<0)		//Si he llenado las necesidades de metabolizmo crezco
+						{
+							s[i][j]++;
+							es->AGE[i][j]=0;
+						
+							NMax_Metabolic = Birth + Dead + Coagulation1 + CoagulationIntra
+							if(es->Max_Metabolic < NMax_Metabolic)
+							{
+								es->Max_Metabolic = NMax_Metabolic;
+							}				
+						}else{			//Si no he llenado necesidades de metabolizmo, como para ir llenando necesidades de metabolizmo.
+							es->AGE[i][j]--;
+						}
+				}else{ //Si no hay comida, checo si corresponde morir.
+					if(((modelo->ResurcesFact)*s[i][j]-es->AGE[i][j])<0) //Las reservas para satisfacer el metabolizmo, se proponen proporcionales al tamano. Si se acaban las reservas, muero.
+					{
+						s[i][j]=0;
+						SO[N]=SO[(es->ON)];
+						es->INDICE[SO[es->ON].i][SO[es->ON].j]=N;
+						(es->ON)--;	
+						es->TIPO[i][j]=0;
+						es->AGE[i][j]=0;
+					}
+				}
+			}
+		}
+	}	
+	
+return;
+}
+
+

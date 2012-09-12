@@ -59,6 +59,13 @@ float xIni;
 float xFin;
 } Dist_MP;
 
+typedef struct {
+float CoaFact;
+float CoaExp;
+float MetFact;
+float MetExp;
+float ResurcesFact;	
+} model;
 
 void SetBirth(float L, int tipo);
 void SetCoagulation(float e, int tipo);
@@ -112,3 +119,5 @@ void CFFT_Mark_MP(estado *es, int NoEnsambles, Float2D_MP *correlacion,int Taman
 void DoblaCorrelacion(Float2D_MP *corr2D);
 void CompactaCorrelacion(Float2D_MP *corr2D, Float1D_MP *corrRadial);
 void ResetFloat1D_MP(Float1D_MP *ARRAY);
+
+void ActualizaUniv(estado *es, int N, model *modelo);

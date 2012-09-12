@@ -8,11 +8,11 @@ Copyright 2012 Jorge Velazquez
 #include "libPP_6.1.h"
 #include "EntSalArb_MP_Comp.h"
 #include "GNA.h"
-#include "ControlDinamico.h"
+//#include "ControlDinamico.h"
 
 main(){	
-int clave=124;
-int *servicio = activa_escucha(clave);
+//int clave=124;
+//int *servicio = activa_escucha(clave);
 //int *servicio;
 //*servicio=0;
 ///////////////////////////Inicializa parametros de la simulacion
@@ -161,22 +161,15 @@ char contenedor[150];
 		for(Par=0;Par<MaxPar;Par++)
 		{
 			BarrMCcRyCampTamano(&e[Par], 1.0);
-			ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
-			ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
+			//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
+			//ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
 			//#pragma omp master
 			//{
 				//GuardaEstadoEn(contenedor,&e[0]);
 			//}
 		}
-		
-		if(*servicio==1)    //Servicio de control Dinamico
-		{
-			printf("entro a servicio\n");
-			Servicio(i,contenedor,&MP_RhoVsT, &MP_RhoVsT_1, &MP_RhoDist, &MP_RhoDist_1, e, MaxPar);
-			SalidaCD(&i,T_max);
-		} 
 	
-			if((i-(i/100)*100)==1)    //Inicializa cada 500 pasos
+			if((i-(i/100)*100)==1)    //Inicializa cada 100 pasos
 			{
 				
 				//printf("T:%d MT: %f, MM:%f\n",i,e[0].Meta_T,e[0].Max_Metabolic);
@@ -214,27 +207,27 @@ char contenedor[150];
 	{
 		ActualizaDistTamano_MP(&e[Par], &TamDist_1, 'A');
 	}
-	SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
+	//SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
 	//SumaFloat1D_MP(&TamDist,&TamDist_1);
 	
-	ResetFloat2D_MP(&MP_Corr2D_Tamano);						
-	CFFT_Mark_MP(e, MaxPar, &MP_Corr2D_Tamano, 10, 10);
-	ResetFloat1D_MP(&MP_Correlacion);
-	CompactaCorrelacion(&MP_Corr2D_Tamano, &MP_Correlacion);
-	SumaFloat1D_MP(&MP_Correlacion,&MP_Correlacion_1);
-	sprintf(prefix,"T_%d_Mark",i);
-	GuardaCorrelacion_MP(contenedor, prefix , &MP_Correlacion_1);
+	//ResetFloat2D_MP(&MP_Corr2D_Tamano);						
+	//CFFT_Mark_MP(e, MaxPar, &MP_Corr2D_Tamano, 10, 10);
+	//ResetFloat1D_MP(&MP_Correlacion);
+	//CompactaCorrelacion(&MP_Corr2D_Tamano, &MP_Correlacion);
+	//SumaFloat1D_MP(&MP_Correlacion,&MP_Correlacion_1);
+	//sprintf(prefix,"T_%d_Mark",i);
+	//GuardaCorrelacion_MP(contenedor, prefix , &MP_Correlacion_1);
 	
 	
 }	/////TERMINA PARALLEL
 
-puts("Guardando informacion...\n");
-GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
-GuardaFloat1D_MP(contenedor,"DistTamanos",&TamDist_1);
+//puts("Guardando informacion...\n");
+//GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
+//GuardaFloat1D_MP(contenedor,"DistTamanos",&TamDist_1);
 //GuardaFloat1D_MP(contenedor,"DistTamRad",&TamDist_1);
 
 
-cierra_escucha();
+//cierra_escucha();
 
 return;
 }
