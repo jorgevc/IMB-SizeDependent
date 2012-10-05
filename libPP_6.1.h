@@ -107,7 +107,7 @@ void InicializaFloat1D_MP(Float1D_MP *Objeto, int i_max);
 
 void GeneraEstadoAleatorioTamano(estado *es, float frac, int tipo, int tamano);
 void ActualizaRyCTamano(estado *es, int N, int campo);
-void BarrMCcRyCampTamano(estado *es, float flujo_recursos);
+void BarrMCcRyCampTamano(estado *es, float flujo_recursos, model *param);
 //void InsertaIndividuosAleatorioTamano(estado *es, int N, int tipo, int tamano);
 //float CorrelacionEspeciesTamano(estado *es,int radio,int TamOrigen, int TamDistante);
 void ActualizaDistTamano_MP(estado *e, Float1D_MP *TamDist, char Opcion);
@@ -121,3 +121,10 @@ void CompactaCorrelacion(Float2D_MP *corr2D, Float1D_MP *corrRadial);
 void ResetFloat1D_MP(Float1D_MP *ARRAY);
 
 void ActualizaUniv(estado *es, int N, model *modelo);
+void LiberaMemoria(estado *es);
+
+/** Calculates the likelyhood of Origin with Experiment 
+ * 
+ */
+float LikelyHood(Float1D_MP *Origin, Float1D_MP *Experiment);
+void CargaExperiment(Float1D_MP *Experiment);

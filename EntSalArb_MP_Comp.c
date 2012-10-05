@@ -46,10 +46,8 @@ strcat(archivo,nombre);
 
 void CreaContenedor(char *nombre)
 {
-char dir[200]="DATOS/";
 
-strcat(dir,nombre);
-mkdir(dir,(S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH));
+mkdir(nombre,(S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH));
 
 fprintf(stdout,"Contenedor creado:\n %s \n",nombre);
 return;
@@ -598,7 +596,7 @@ void GuardaFloat1D_MP(char *contenedor,char *nombre, Float1D_MP *MP_Float1D)
 	char nombreCom[150];
 	
 		printf("Guardando .. \n");
-		sprintf(nombreCom,"DATOS/%s/%s",contenedor,nombre);
+		sprintf(nombreCom,"%s/%s",contenedor,nombre);
 		Arch = fopen(nombreCom,"w");
 		for(i=0;i<=NDX;i++)
 		{
