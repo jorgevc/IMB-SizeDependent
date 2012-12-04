@@ -11,13 +11,15 @@ Copyright 2012 Jorge Velazquez
 #include "libPP_6.1.h"
 
 
+
 especie *parametros=NULL;
 static float Max_Metabolic=0.0;
  clock_t start, end, start2, end2;
 static double cpu_time_used=0.0;
 static double tiempo2=0.0;
 
-//#pragma omp threadprivate(Max_Metabolic)
+Grupo GRUPO_INI = { 0, 0, 0, -1 }; //TIPO = 0 : Todos los tipos, s = 0 : Todos los tamanos, NEG = 0 : No negacion, Numero de elementos en la ultima vez que se proceso (-1 : no procesado todavia)
+
 
 void AlojaMemoriaEspecie(int tipo)
 {	
@@ -162,6 +164,18 @@ ile = NDX + 1;
 	es->ON = 0;
 	es->Max_Metabolic=Max_Metabolic;
 	es->Meta_T = 0.0;
+return;
+}
+
+void LiberaMemoria(estado *es)
+{
+	free(es->s[0]);
+	free(es->INDICE[0]);
+	free(es->TIPO[0]);
+	free(es->SO);
+	free(es->s);
+	free(es->INDICE);
+	free(es->TIPO);
 return;
 }
 
@@ -360,7 +374,7 @@ void BarrMCcRyCamp(estado *es)
 //	start2 = clock();  //clock comentar!!
 int Indice,i,vtipo;
 float DT=0.0;
-int campo;
+int campo=0;
 	
 	while(DT<1.0){
 		if((es->ON) != 0){
@@ -479,297 +493,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 return;
 }
 
-float OnPromRadio(estado *es, int radio)
-{
-	int x,y,R2,w,n;
-	int diam = 2 * radio;
-	int r2 = radio * radio;
-	int A = diam * diam;
-	int rho=0;
-	sitio *SO = es->SO;
-	sitio vecino;
-	float Rho_P;
-	int ON=es->ON;
-	int NDX=es->NDX;
-	int NDY=es->NDY;	
-	int **s = es->s; 
 
-	for(n=1;n<=ON;n++)
-	{		
-		for(w=1;w<=A;w++)
-		{
-		x=I_JKISS(0,diam) - radio;
-		y=I_JKISS(0,diam) - radio;
-
-		R2= x * x + y * y;
-			if(R2<=r2 && R2!=0)
-			{
-				vecino.i=SO[n].i + x;
-				vecino.j=SO[n].j + y;
-				if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-				if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-			
-				if( s[vecino.i][vecino.j]>=1 )
-				{
-					rho+=1;
-				}
-			}
-		}
-	}
-	Rho_P=(float)rho/(float)ON;
-return Rho_P; 	
-}
-
-float FuncionCorrelacion(estado *es,int radio)
-{
-	static float Rho_Ant=0.0;
-	static int radio_Ant=0;
-	float g,Rho;
-	float Densidad=(float)(es->ON)/(float)((es->NDX)*(es->NDY));
-	
-	Rho=OnPromRadio(es, radio);
-	
-	if(radio_Ant != (radio-1))
-	{
-		radio_Ant=OnPromRadio(es, (radio-1));
-	}
-	
-	g=(Rho-Rho_Ant)/(2.0*3.14159*radio*Densidad);
-	
-	Rho_Ant=Rho;
-	radio_Ant=radio;
-	
-return g;
-}
-
-float FuncionCorrelacion2(estado *es,int radio)
-{
-	int x,y,n,i,j;
-	int MasDer;
-	sitio vecino;
-	int **s=es->s;
-	int Rho=0;
-	int NDX=es->NDX;
-	int NDY=es->NDY;
-	int RadioInterior2 = (radio-1) * (radio-1);
-	int Radio2 = radio * radio;
-	int ON=es->ON;
-	float Densidad=(float)ON/(float)(NDX*NDY);
-	float g;
-	
-	for(n=1;n<=ON;n++)
-	{
-		x=es->SO[n].i;
-		y=es->SO[n].j;
-		MasDer=radio;
-		i=MasDer;
-		for(j=0;j<=i;j++)
-		{ 
-			do{
-				if((i*i + j*j)<=Radio2)
-				{
-					vecino.i=x+i;				//Octante 1
-					vecino.j=y+j;
-					if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-					if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-					if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-					if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-						if(s[vecino.i][vecino.j]>0){Rho++;}
-						
-					vecino.i=x-j;			//Octante 3
-					vecino.j=y+i;
-					if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-					if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-					if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-					if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-					if(s[vecino.i][vecino.j]>0){Rho++;}	
-							
-					vecino.i=x-i;			//Octante 5
-					vecino.j=y-j;
-					if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-					if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-					if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-					if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-						if(s[vecino.i][vecino.j]>0){Rho++;}	
-						
-					vecino.i=x+j;			//Octante 7
-					vecino.j=y-i;
-					if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-					if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-					if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-					if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-						if(s[vecino.i][vecino.j]>0){Rho++;}
-					
-					if(i!=j && j!=0)
-					{
-						vecino.i=x+j;		//Octante 2
-						vecino.j=y+i;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-							if(s[vecino.i][vecino.j]>0){Rho++;}
-
-						vecino.i=x-i;			//Octante 4
-						vecino.j=y+j;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-							if(s[vecino.i][vecino.j]>0){Rho++;}
-												
-									
-						vecino.i=x-j;			//Octante 6
-						vecino.j=y-i;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-							if(s[vecino.i][vecino.j]>0){Rho++;}
-						
-											
-						vecino.i=x+i;			//Octante 8
-						vecino.j=y-j;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-							if(s[vecino.i][vecino.j]>0){Rho++;}	
-										
-					}	
-										
-				}else{
-					MasDer--;
-				}
-				i--;
-			}while((i*i + j*j)>RadioInterior2);
-			i=MasDer;
-		}
-	}
-	
-	g=(float)Rho/(6.283185307*radio*Densidad*ON);
-	
-return g;
-}
-
-
-
-
-float FuncionCorrelacionSpecies(estado *es,int radio,int TipoOrigen, int TipoDistante)
-{
-	int x,y,n,i,j;
-	int MasDer;
-	sitio vecino;
-	int **s=es->s;
-	int Rho=0;
-	int NDX=es->NDX;
-	int NDY=es->NDY;
-	int RadioInterior2 = (radio-1) * (radio-1);
-	int Radio2 = radio * radio;
-	int ON=es->ON;
-	float Densidad;
-	float g;
-	int **TIPO = es->TIPO;
-	
-	for(n=1;n<=ON;n++)
-	{
-		if(TIPO[es->SO[n].i][es->SO[n].j]==TipoOrigen)
-		{
-			x=es->SO[n].i;
-			y=es->SO[n].j;
-			MasDer=radio;
-			i=MasDer;
-			for(j=0;j<=i;j++)
-			{ 
-				do{
-					if((i*i + j*j)<=Radio2)
-					{
-						vecino.i=x+i;				//Octante 1
-						vecino.j=y+j;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-							if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}
-							
-						vecino.i=x-j;			//Octante 3
-						vecino.j=y+i;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-						if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}	
-								
-						vecino.i=x-i;			//Octante 5
-						vecino.j=y-j;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-							if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}	
-							
-						vecino.i=x+j;			//Octante 7
-						vecino.j=y-i;
-						if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-						if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-						if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-						if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-							if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}
-						
-						if(i!=j && j!=0)
-						{
-							vecino.i=x+j;		//Octante 2
-							vecino.j=y+i;
-							if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-							if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-							if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-							if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-								if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}
-
-							vecino.i=x-i;			//Octante 4
-							vecino.j=y+j;
-							if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-							if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-							if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-							if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-								if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}
-													
-										
-							vecino.i=x-j;			//Octante 6
-							vecino.j=y-i;
-							if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-							if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-							if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-							if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-								if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}
-							
-												
-							vecino.i=x+i;			//Octante 8
-							vecino.j=y-j;
-							if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-							if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-							if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-							if(vecino.j > NDY){vecino.j = vecino.j - NDY;}	
-								if(s[vecino.i][vecino.j]>0 && TIPO[vecino.i][vecino.j]==TipoDistante){Rho++;}			
-						}	
-											
-					}else{
-						MasDer--;
-					}
-					i--;
-				}while((i*i + j*j)>RadioInterior2);
-				i=MasDer;
-			}
-		}
-	}
-	
-	Densidad=(float)CuentaEspecie(es, TipoDistante)/(float)(NDX*NDY);
-	g=(float)Rho/(6.283185307*((float)(radio*ON))*Densidad);
-	
-return g;
-}
 
 int CuentaEspecie(estado *es, int tipo)
 {
@@ -807,7 +531,7 @@ int **INDICE = es->INDICE;
 return;
 }
 
-void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,Dist_MP *Dist)	
+void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,Dist_MP *Dist,char Option)	
 {
 int T=es->T;
 int **s = es->s;
@@ -825,21 +549,28 @@ if(RhoVsT!=NULL)
 }else
 {
 	NoEspecies=0;
+	if(Option=='s')
+	{
 		for(n=1;n<=ON;n++)
-		{
-			//if(NoEspecies<TIPO[SO[n].i][SO[n].j])
-			//{
-				//NoEspecies=TIPO[SO[n].i][SO[n].j];
-			//}
+		{		
 			if(NoEspecies<s[SO[n].i][SO[n].j])
 			{
 				NoEspecies=s[SO[n].i][SO[n].j];
-			}
-			
+			}		
 		}
+	}else{
+		for(n=1;n<=ON;n++)
+		{
+			if(NoEspecies<TIPO[SO[n].i][SO[n].j])
+			{
+				NoEspecies=TIPO[SO[n].i][SO[n].j];
+			}
+		}
+	}
 }
 
-int tot=NoEspecies + 2;
+int tot=NoEspecies + 1;
+
 int rhoVec[tot];  
 memset(rhoVec,0,tot * sizeof(int));
 int NoPart;
@@ -864,14 +595,21 @@ if(Dist!=NULL && Dist->T!=T)
 
 	if(NoEspecies!=0)
 	{
-		for(n=1;n<=ON;n++)
+		if(Option=='s')
 		{
-			//rhoVec[TIPO[SO[n].i][SO[n].j]]++;			//Segmentation Fault si exite un tipo mas grande que el tamano de RhoVsT en j
-			if(s[SO[n].i][SO[n].j]<=(tot-2))
+			for(n=1;n<=ON;n++)
 			{
-				rhoVec[s[SO[n].i][SO[n].j]]++;
-			}else{
-				//printf("Hubo tamanos que no se registraron en RhoVsT: %d\n",s[SO[n].i][SO[n].j]);
+				if(s[SO[n].i][SO[n].j]<=NoEspecies)
+				{
+					rhoVec[s[SO[n].i][SO[n].j]]++;
+				}else{
+					//printf("Hubo tamanos que no se registraron en RhoVsT: %d\n",s[SO[n].i][SO[n].j]);
+				}
+			}
+		}else{
+			for(n=1;n<=ON;n++)
+			{
+			rhoVec[TIPO[SO[n].i][SO[n].j]]++;			//Segmentation Fault si exite un tipo mas grande que el tamano de RhoVsT en j
 			}
 		}
 
@@ -930,6 +668,13 @@ void IniciaMemoriaFloat2D_MP(Float2D_MP *ARRAY)
 return;		
 }
 
+void LiberaMemoriaFloat2D_MP(Float2D_MP *ARRAY)
+{
+	free(*(ARRAY->array));
+	free(ARRAY->array);
+return;
+}
+
 void IniciaMemoriaInt2D_MP(Int2D_MP *ARRAY)
 {
 		int col = ARRAY->j_max + 1;
@@ -958,7 +703,8 @@ return;
 
 void IniciaMemoriaDist_MP(Dist_MP *Dist)
 {
-	int tam = (int)(1.0/Dist->TamParticion) + 1;
+	float Dx = Dist->xFin - Dist->xIni;
+	int tam = (int)(Dx/Dist->TamParticion) + 1;
 		Dist->array = (int *)calloc(tam, sizeof(int));
 		if(Dist->array==NULL)
 		{
@@ -986,6 +732,20 @@ void ResetFloat2D_MP(Float2D_MP *ARRAY)
 return;
 }
 
+
+void ResetFloat1D_MP(Float1D_MP *ARRAY)
+{
+	int i;
+		for(i=0;i<=ARRAY->i_max;i++)
+		{
+			ARRAY->array[i]=0.0;
+		}
+		ARRAY->NoEnsambles=0;
+		ARRAY->T=0;
+		
+return;
+}
+
 void ResetDist_MP(Dist_MP *Dist)
 {
 	int i;
@@ -994,6 +754,7 @@ void ResetDist_MP(Dist_MP *Dist)
 		Dist->array[i]=0;
 	}
 	Dist->T=0;
+	Dist->NoEnsambles=0;
 
 return;
 }
@@ -1011,6 +772,11 @@ int T,tipo;
 		Destino->array[T][tipo]+=Origen->array[T][tipo];		//Segmentation fault si el tamano de Origen y Destino no coinciden
 		}
 	}
+	#pragma omp atomic
+	Destino->NoEnsambles+=Origen->NoEnsambles;
+	
+	Destino->T=Origen->T;
+
 return;	
 }
 
@@ -1037,82 +803,18 @@ void InicializaFloat2D_MP(Float2D_MP *Objeto, int i_max, int j_max, int NoEnsamb
 		Objeto->i_max=i_max;
 		Objeto->j_max=j_max;  //No especies
 		Objeto->NoEnsambles=NoEnsambles;
+		Objeto->T=0;
 		IniciaMemoriaFloat2D_MP(Objeto);
 return;
 }
 
-void InicializaDist_MP(Dist_MP *Objeto, float TamParticion)
+void InicializaDist_MP(Dist_MP *Objeto, float TamParticion, float xIni, float xFin)
 {
 	Objeto->TamParticion=TamParticion;
 	Objeto->NoEnsambles=0;
+	Objeto->xIni=xIni;
+	Objeto->xFin=xFin;
 	IniciaMemoriaDist_MP(Objeto);
-return;
-}
-
-void SetSpecie(int NoEspecie, float Birth, float Coagulation, float Dead, float RadioBirth, float RadioCoa)
-{
-	SetBirth(Birth,NoEspecie);
-	SetCoagulation(Coagulation,NoEspecie);
-	SetCoagulationIntra(0.0,NoEspecie);
-	SetDead(Dead,NoEspecie);
-	SetRadioBirth(RadioBirth,NoEspecie);
-	SetRadioCoa(RadioCoa,NoEspecie);
-	EscalaTiempoMetabolico(NoEspecie);
-			
-return;
-}
-
-void SetSpecie2(int NoEspecie, float Birth, float Coagulation,float CoagulationIntra, float Dead, float RadioBirth, float RadioCoa, float RadioCoaIntra )
-{
-		//printf("Especie %d inicializando\n",NoEspecie);
-	SetBirth(Birth,NoEspecie);
-	SetCoagulation(Coagulation,NoEspecie);
-	SetCoagulationIntra(CoagulationIntra,NoEspecie);
-	SetDead(Dead,NoEspecie);
-	SetRadioBirth(RadioBirth,NoEspecie);
-	SetRadioCoa(RadioCoa,NoEspecie);
-	SetRadioCoaIntra(RadioCoaIntra,NoEspecie);
-	EscalaTiempoMetabolico(NoEspecie);
-		//	printf("Especie %d lista\n",NoEspecie);
-return;
-}
-
-
-
-
-
-void SumaFloat1D_MP(Float1D_MP *Origen,Float1D_MP *Destino)
-{
-	int R_max=Origen->i_max;
-	int i;
-	
-	for(i=1;i<=R_max;i++)
-	{
-		#pragma omp atomic
-		Destino->array[i]+=Origen->array[i];
-	}
-	#pragma omp atomic
-	Destino->NoEnsambles+=Origen->NoEnsambles;
-	
-	Destino->T=Origen->T;
-	
-return;
-}
-
-void InicializaFloat1D_MP(Float1D_MP *Objeto, int i_max)
-{
-		Objeto->NoEnsambles=0;
-		Objeto->i_max=i_max;
-		Objeto->T=0;
-
-		int tam = i_max + 1;
-		Objeto->array = (float *)calloc(tam, sizeof(float));
-		if(Objeto->array==NULL)
-		{
-			puts("No se pudo alojar memoria para Float1D_MP\n");
-			exit(1);
-		}	
-	
 return;
 }
 
@@ -1514,10 +1216,322 @@ void ActualizaRecursos_MP(estado *es,Float2D_MP *RhoVsT)
 	recursos/=(float)(NDX*NDY);
 	#pragma omp atomic
 	RhoVsT->array[T][n]+=recursos;
-	
 	return;
 }
 
+void SetSpecie(int NoEspecie, float Birth, float Coagulation, float Dead, float RadioBirth, float RadioCoa)
+{
+	SetBirth(Birth,NoEspecie);
+	SetCoagulation(Coagulation,NoEspecie);
+	SetCoagulationIntra(0.0,NoEspecie);
+	SetDead(Dead,NoEspecie);
+	SetRadioBirth(RadioBirth,NoEspecie);
+	SetRadioCoa(RadioCoa,NoEspecie);
+	EscalaTiempoMetabolico(NoEspecie);
+			
+return;
+}
+
+void SetSpecie2(int NoEspecie, float Birth, float Coagulation,float CoagulationIntra, float Dead, float RadioBirth, float RadioCoa, float RadioCoaIntra )
+{
+		//printf("Especie %d inicializando\n",NoEspecie);
+	SetBirth(Birth,NoEspecie);
+	SetCoagulation(Coagulation,NoEspecie);
+	SetCoagulationIntra(CoagulationIntra,NoEspecie);
+	SetDead(Dead,NoEspecie);
+	SetRadioBirth(RadioBirth,NoEspecie);
+	SetRadioCoa(RadioCoa,NoEspecie);
+	SetRadioCoaIntra(RadioCoaIntra,NoEspecie);
+	EscalaTiempoMetabolico(NoEspecie);
+		//	printf("Especie %d lista\n",NoEspecie);
+return;
+}
+
+
+void SumaFloat1D_MP(Float1D_MP *Origen,Float1D_MP *Destino)
+{
+	int R_max=Origen->i_max;
+	int i;
+	
+	for(i=1;i<=R_max;i++)
+	{
+		#pragma omp atomic
+		Destino->array[i]+=Origen->array[i];
+	}
+	#pragma omp atomic
+	Destino->NoEnsambles+=Origen->NoEnsambles;
+	
+	Destino->T=Origen->T;
+	
+return;
+}
+
+void InicializaFloat1D_MP(Float1D_MP *Objeto, int i_max)
+{
+		Objeto->NoEnsambles=0;
+		Objeto->i_max=i_max;
+		Objeto->T=0;
+
+		int tam = i_max + 1;
+		Objeto->array = (float *)calloc(tam, sizeof(float));
+		if(Objeto->array==NULL)
+		{
+			puts("No se pudo alojar memoria para Float1D_MP\n");
+			exit(1);
+		}	
+	
+return;
+}
+
+void LiberaMemoriaFloat1D_MP(Float1D_MP *Objeto)
+{
+	free(Objeto->array);
+return;
+}
+
+void CFFT(estado *es, Float2D_MP *correlacion)
+{
+	printf("Entra a fft\n");
+fftw_complex *out;
+fftw_plan p, plan2;
+int NDX = es->NDX;
+int NDY = es->NDY;
+int **s = es->s;
+double *in;
+int i,j;
+int nyh = ( NDY / 2 ) + 1;
+
+#pragma omp critical
+{
+ in = fftw_alloc_real( sizeof ( double ) * NDX * NDY );
+//in = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NDX * NDY);
+
+
+out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NDX * nyh);
+
+
+p = fftw_plan_dft_r2c_2d ( NDX, NDY, in, out, FFTW_ESTIMATE );
+}
+	printf("Termina primer plan\n");
+ 
+ for ( i = 0; i < NDX; i++ )
+  {
+    for ( j = 0; j < NDY; j++ )
+    {
+     // in[i*NDY+j][0] = s[i+1][j+1];
+      //in[i*NDY+j][1] = 0;
+      in[i*NDY + j] = (double)s[i+1][j+1];
+    }
+   // printf("in 1comlumna: %f\n",in[i*NDY + 10]);
+  }
+
+	printf("Comienza FFT\n");
+fftw_execute(p); /* repeat as needed */
+	printf("Termina FFT\n");
+ for ( i = 0; i < NDX; i++ )
+  {
+    for ( j = 0; j < nyh; j++ )
+    {
+      out[i*nyh + j][0] = out[i*nyh + j][0]*out[i*nyh + j][0] + out[i*nyh + j][1]*out[i*nyh + j][1];
+      out[i*nyh + j][1] = 0;
+    }
+  //  printf("out trans 1 col: %f\n",out[i*nyh + 10][0]);
+  }
+		printf("2plan\n");
+		#pragma omp critical
+		{
+plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out, in, FFTW_ESTIMATE );
+		}
+	printf("2plan listo\n");
+printf("Comienza FFT 2\n");
+ fftw_execute ( plan2 );
+ printf("Termina FFT 2\n");
+ 
+ for ( i = 0; i < NDX; i++ )
+  {
+    for ( j = 0; j < NDY; j++ )
+    {
+		 in[i*NDY + j]/=(double)(NDX*NDY);
+      correlacion->array[i][j]=in[i*NDY + j]/(double)(es->ON);
+    }
+  }
+ 
+ #pragma omp critical
+ {
+fftw_destroy_plan(p);
+fftw_destroy_plan(plan2);
+}
+fftw_free(in);
+fftw_free(out);
+
+return;
+}
+
+void CFFT_MP(estado *es, int NoEnsambles, Float2D_MP *correlacion)
+{
+
+fftw_complex *out;
+fftw_plan p, plan2;
+int NDX = es[0].NDX;
+int NDY = es[0].NDY;
+double *in;
+int i,j,n;
+int nyh = ( NDY / 2 ) + 1;
+
+#pragma omp critical
+{
+in = fftw_alloc_real( sizeof ( double ) * NDX * NDY );
+out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NDX * nyh);
+
+p = fftw_plan_dft_r2c_2d ( NDX, NDY, in, out, FFTW_ESTIMATE );
+plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out, in, FFTW_ESTIMATE );
+}
+
+ for(n=0;n<NoEnsambles;n++)
+ {
+	 for ( i = 0; i < NDX; i++ )
+	  {
+		for ( j = 0; j < NDY; j++ )
+		{
+		  in[i*NDY + j] = (double)es[n].s[i+1][j+1];
+		}
+	   // printf("in 1comlumna: %f\n",in[i*NDY + 10]);
+	  }
+
+	fftw_execute(p); /* repeat as needed */
+		
+	 for ( i = 0; i < NDX; i++ )
+	  {
+		for ( j = 0; j < nyh; j++ )
+		{
+		  out[i*nyh + j][0] = out[i*nyh + j][0]*out[i*nyh + j][0] + out[i*nyh + j][1]*out[i*nyh + j][1];
+		  out[i*nyh + j][1] = 0;
+		}
+	  }
+			
+	 fftw_execute ( plan2 );
+	 
+	 for ( i = 0; i < NDX; i++ )
+	  {
+		for ( j = 0; j < NDY; j++ )
+		{
+			 in[i*NDY + j]/=(double)(es[n].ON);
+			 in[i*NDY + j]/=(double)(es[n].ON);
+			 #pragma omp atomic
+		  correlacion->array[i][j]+=in[i*NDY + j];
+		}
+	  }
+	  #pragma omp atomic
+	  correlacion->NoEnsambles++;
+  }
+ 
+ correlacion->T=es->T;
+ 
+ #pragma omp critical
+{
+fftw_destroy_plan(p);
+fftw_destroy_plan(plan2);
+}
+fftw_free(in);
+fftw_free(out);
+
+return;
+}
+
+void CompactaCorrelacion(Float2D_MP *corr2D, Float1D_MP *corrRadial)
+{
+	int radio;
+	int r_max; 
+	int MasDer;
+	int RadioInterior2;
+	int Radio2;
+	int Contados,i,j;
+	
+	DoblaCorrelacion(corr2D);
+	
+	corrRadial->array[0]=corr2D->array[0][0];
+	corrRadial->array[1]=(corr2D->array[1][0] + corr2D->array[0][1])/2.0;
+	
+	if((corr2D->j_max) < (corr2D->i_max))
+	{
+		r_max=corr2D->j_max;
+	}else{
+		r_max=corr2D->i_max;
+	}
+	
+	for(radio=2;radio<=r_max/2;radio++)
+	{
+		Contados=0;
+		RadioInterior2 = (radio-1) * (radio-1);
+		Radio2 = radio * radio;
+		MasDer=radio;
+		i=MasDer;
+		for(j=0;j<=i;j++)
+		{ 
+			do{
+				if((i*i + j*j)<=Radio2)
+				{
+								//Octante 1
+							corrRadial->array[radio]+=corr2D->array[i][j];
+							Contados++;
+					
+					if(i!=j)
+					{
+								//Octante 2					
+						corrRadial->array[radio]+=corr2D->array[j][i];
+							Contados++;					
+					}	
+									
+				}else{
+					MasDer--;
+				}
+				i--;
+			}while((i*i + j*j)>RadioInterior2);
+			i=MasDer;
+		}
+		corrRadial->array[radio]/=(float)Contados;
+	}
+	corrRadial->NoEnsambles=corr2D->NoEnsambles;
+	corrRadial->T=corr2D->T;
+	corrRadial->i_max = r_max/2;
+return;
+}
+
+void DoblaCorrelacion(Float2D_MP *corr2D)
+{
+	int i,j;
+	
+	int NDX=corr2D->i_max;
+	int NDY=corr2D->j_max;
+	int nyred = ( NDY / 2 ) + 1;
+	int nxred = ( NDX / 2 ) + 1;
+	
+	corr2D->array[NDX][NDY]=corr2D->array[0][0];
+	corr2D->array[0][NDY]=corr2D->array[0][0];
+	corr2D->array[NDX][0]=corr2D->array[0][0];
+	
+	for(i=0;i<nxred;i++)
+	{
+		for(j=0;j<nyred;j++)
+		{
+			if(i==0)
+			{
+				corr2D->array[NDX][j]=corr2D->array[0][j];
+				corr2D->array[NDX][NDY-j]=corr2D->array[0][NDY-j];
+			}
+			if(j==0)
+			{
+				corr2D->array[i][NDY]=corr2D->array[i][0];
+				corr2D->array[NDX-i][NDY]=corr2D->array[NDX-i][0];
+			}
+				corr2D->array[i][j]=(corr2D->array[i][j] + corr2D->array[NDX-i][j] + corr2D->array[i][NDY-j] + corr2D->array[NDX-i][NDY-j])/4.0;
+		}
+	}
+	
+return;
+}
+	
+	
 void CFFT_Tipos_MP(estado *es, int NoEnsambles, Float2D_MP *correlacion,int TipoOrigen, int TipoDestino)
 {
 fftw_complex *out1;
@@ -1562,7 +1576,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 			}
 			if(TipoDestino < 0)
 			{
-				if(es[n].TIPO[i+1][j+1] != TipoDestino && es[n].TIPO[i+1][j+1] != 0)
+				if(es[n].TIPO[i+1][j+1] != (-1*TipoDestino) && es[n].TIPO[i+1][j+1] != 0)
 				{
 					in2[i*NDY + j] = (double)es[n].s[i+1][j+1];
 					on2++;
@@ -1615,7 +1629,8 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 		  
 		  #pragma omp atomic
 		  correlacion->NoEnsambles++;
-		  		 
+		
+		  correlacion->i_max=NDX;		 
 		  correlacion->j_max=NDY;
 		
 	  }
@@ -1624,21 +1639,21 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
  
  correlacion->T=es[0].T;
  
- #pragma omp critical
+#pragma omp critical
 {
 fftw_destroy_plan(p1);
 fftw_destroy_plan(p2);
 fftw_destroy_plan(plan2);
-}
 fftw_free(in1);
 fftw_free(in2);
 fftw_free(out1);
 fftw_free(out2);
-
+}
 return;
 }
 
-void CFFT_Mark_MP(estado *es, int NoEnsambles, Float2D_MP *correlacion,int TamanoOrigen, int TamanoDestino)
+
+void CFFT_Univ_MP(estado *es, CorrDescriptor *Especifica, Float2D_MP *correlacion, Grupo *TipoOrigen, Grupo *TipoDestino)
 {
 fftw_complex *out1;
 fftw_complex *out2;
@@ -1648,8 +1663,24 @@ int NDY = es[0].NDY;
 double *in1;
 double *in2;
 double Re,Im;
-int i,j,n,on1,on2;
+int i,j,n,on1,on2,on0, Muestra, ind;
 int nyh = ( NDY / 2 ) + 1;
+sitio SO[es[0].ON+1000];
+
+int MeanSquare=Especifica->MeanSquare;
+int NoEnsambles=Especifica->NoEnsambles;
+int NoMuestras=Especifica->NoMuestras;
+int MuestraIni;
+int MuestraFin;
+if (Especifica->Muestra > 0)	//Si se especifica Muestra, entonces solo se analiza esa muestra
+{
+	MuestraIni=Especifica->Muestra;
+	MuestraFin=Especifica->Muestra;
+}else{		// Valor de 0 (o negativo) en Especifica.Muestra analiza todas las muestras
+	MuestraIni=1;
+	MuestraFin=Especifica->NoMuestras;
+}
+
 
 #pragma omp critical
 {
@@ -1668,191 +1699,259 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
  {
 	 on1=0;
 	 on2=0;
+	 on0=0;
 	 
 	 for ( i = 0; i < NDX; i++ )
 	  {
 		for ( j = 0; j < NDY; j++ )
 		{
-			if(es[n].s[i+1][j+1]==TamanoOrigen || (TamanoOrigen==0 && es[n].s[i+1][j+1]>0))
+			if(TipoOrigen->TIPO!=0) //se sepecifico tipo
 			{
-				in1[i*NDY + j] = (double)es[n].s[i+1][j+1];
-				on1+=es[n].s[i+1][j+1];
-			}else{
-				in1[i*NDY + j] = 0.0;
+				if(TipoOrigen->s!=0) //se especifico tamano
+				{
+					if(TipoOrigen->NEG!=1) //no es el negativo
+					{
+						if(es[n].TIPO[i+1][j+1]==TipoOrigen->TIPO && es[n].s[i+1][j+1]==TipoOrigen->s)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoOrigen->TIPO && es[n].s[i+1][j+1]!=TipoOrigen->s)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}
+				}else{  //todos los tamanos
+					if(TipoOrigen->NEG!=1) //no es el negativo
+					{
+						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]==TipoOrigen->TIPO)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoOrigen->TIPO)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}
+				}
+			}else{ //todos los tipos
+				if(TipoOrigen->s!=0) //se especifico tamano
+				{
+					if(TipoOrigen->NEG!=1) //no es el negativo
+					{
+						if(es[n].s[i+1][j+1]==TipoOrigen->s)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]>0 && es[n].s[i+1][j+1]!=TipoOrigen->s)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}
+				}else{  //todos los tamanos
+					if(TipoOrigen->NEG!=1) //no es el negativo
+					{
+						if(es[n].s[i+1][j+1]>0)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]<1)
+						{
+							on0++;
+							SO[on0].i=i;
+							SO[on0].j=j;
+						}
+					}
+				}
 			}
-			if(TamanoDestino <= 0)
+			//--------------------
+			if(TipoDestino->TIPO!=0) //se sepecifico tipo
 			{
-				if(es[n].s[i+1][j+1] != (-1*TamanoDestino) && es[n].s[i+1][j+1] > 0)
+				if(TipoDestino->s!=0) //se especifico tamano
 				{
-					in2[i*NDY + j] = (double)es[n].s[i+1][j+1];
-					on2+=es[n].s[i+1][j+1];
-				}else{
-					in2[i*NDY + j] = 0.0;
+					if(TipoDestino->NEG!=1) //no es el negativo
+					{
+						if(es[n].TIPO[i+1][j+1]==TipoDestino->TIPO && es[n].s[i+1][j+1]==TipoDestino->s)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoDestino->TIPO && es[n].s[i+1][j+1]!=TipoDestino->s)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}
+				}else{  //todos los tamanos
+					if(TipoDestino->NEG!=1) //no es el negativo
+					{
+						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]==TipoDestino->TIPO)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoDestino->TIPO)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}
 				}
-			}else{	
-				if(es[n].s[i+1][j+1] == TamanoDestino)
+			}else{ //todos los tipos
+				if(TipoDestino->s!=0) //se especifico tamano
 				{
-					in2[i*NDY + j] = (double)es[n].s[i+1][j+1];
-					on2+=es[n].s[i+1][j+1];
-				}else{
-					in2[i*NDY + j] = 0.0;
+					if(TipoDestino->NEG!=1) //no es el negativo
+					{
+						if(es[n].s[i+1][j+1]==TipoDestino->s)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]>0 && es[n].s[i+1][j+1]!=TipoDestino->s)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}
+				}else{  //todos los tamanos
+					if(TipoDestino->NEG!=1) //no es el negativo
+					{
+						if(es[n].s[i+1][j+1]>0)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}else{ //el negativo
+						if(es[n].s[i+1][j+1]<1)
+						{
+							in2[i*NDY + j] = 1.0;
+							on2++;
+						}else{
+							in2[i*NDY + j] = 0.0;
+						}
+					}
 				}
 			}
-		}
-	   // printf("in 1comlumna: %f\n",in[i*NDY + 10]);
-	    
+					
+		}  
 	  }
-
-	if(on1>0 && on2>0)
+	  
+	  
+	  
+	  if(MuestraIni != MuestraFin && MuestraFin>on0)
+	  {
+		  MuestraFin=on0;
+		  printf("No maximo de muestras posibles = %d !\n",on0);
+	  }
+	  
+	for(Muestra=MuestraIni;Muestra<=MuestraFin;Muestra++)
 	{
-		
-		fftw_execute(p1); 
-		fftw_execute(p2);
-		
-		 for ( i = 0; i < NDX; i++ )
-		  {
-			for ( j = 0; j < nyh; j++ )
-			{
-				Re=out1[i*nyh + j][0]*out2[i*nyh + j][0] + out1[i*nyh + j][1]*out2[i*nyh + j][1];
-				Im=out1[i*nyh + j][1]*out2[i*nyh + j][0] - out1[i*nyh + j][0]*out2[i*nyh + j][1];
-			  out1[i*nyh + j][0] = Re;
-			  out1[i*nyh + j][1] = Im;
-			}
-		  }
+		on1=0;
+		for(i=0;i<(NDX*NDY);i++)
+		{
+			in1[i]=0.0;
+		}
+		for(ind=0;(ind*NoMuestras + Muestra)<=on0;ind++)
+		{
+			in1[SO[ind*NoMuestras + Muestra].i*NDY + SO[ind*NoMuestras + Muestra].j]=1.0;
+			on1++;
+		}
+
+		if(on1>0 && on2>0)
+		{
 			
-		 fftw_execute ( plan2 );
-		 
-		 for ( i = 0; i < NDX; i++ )
-		  {
-			for ( j = 0; j < NDY; j++ )
-			{
-				 in1[i*NDY + j]/=(double)on1;
-				 in1[i*NDY + j]/=(double)on2;
-				 #pragma omp atomic
-					correlacion->array[i][j]+=in1[i*NDY + j];	
-			}
-		  }
+			fftw_execute(p1); 
+			fftw_execute(p2);
+			
+			 for ( i = 0; i < NDX; i++ )
+			  {
+				for ( j = 0; j < nyh; j++ )
+				{
+					Re=out1[i*nyh + j][0]*out2[i*nyh + j][0] + out1[i*nyh + j][1]*out2[i*nyh + j][1];
+					Im=out1[i*nyh + j][1]*out2[i*nyh + j][0] - out1[i*nyh + j][0]*out2[i*nyh + j][1];
+				  out1[i*nyh + j][0] = Re;
+				  out1[i*nyh + j][1] = Im;
+				}
+			  }
+				
+			 fftw_execute ( plan2 );
+			 
+			 for ( i = 0; i < NDX; i++ )
+			  {
+				for ( j = 0; j < NDY; j++ )
+				{
+					 in1[i*NDY + j]/=(double)on1;
+					 in1[i*NDY + j]/=(double)on2;
+					 #pragma omp atomic
+						correlacion[0].array[i][j]+=in1[i*NDY + j];
+						
+					if(MeanSquare==1)
+					{
+						#pragma omp atomic
+						correlacion[1].array[i][j]+=pow(in1[i*NDY + j],2.0);
+					}
+				}
+			  }
 		  
 		  #pragma omp atomic
 		  correlacion->NoEnsambles++;
-		  		 
+		
+		  correlacion->i_max=NDX;		 
 		  correlacion->j_max=NDY;
 		
-	  }
-	  
+		}
+	}  
   }
  
  correlacion->T=es[0].T;
+ TipoOrigen->on=on0;
+ TipoDestino->on=on2;
  
  #pragma omp critical
 {
 fftw_destroy_plan(p1);
 fftw_destroy_plan(p2);
 fftw_destroy_plan(plan2);
-}
 fftw_free(in1);
 fftw_free(in2);
 fftw_free(out1);
 fftw_free(out2);
-
-return;
 }
 
-void CompactaCorrelacion(Float2D_MP *corr2D, Float1D_MP *corrRadial)
-{
-	int radio;
-	int i_max=corr2D->j_max;
-	int MasDer;
-	int RadioInterior2;
-	int Radio2;
-	int Contados,i,j;
-	
-	DoblaCorrelacion(corr2D);
-	
-	corrRadial->array[0]=corr2D->array[0][0];
-	corrRadial->array[1]=(corr2D->array[1][0] + corr2D->array[0][1])/2.0;
-	
-	
-	for(radio=2;radio<=i_max/2;radio++)
-	{
-		Contados=0;
-		RadioInterior2 = (radio-1) * (radio-1);
-		Radio2 = radio * radio;
-		MasDer=radio;
-		i=MasDer;
-		for(j=0;j<=i;j++)
-		{ 
-			do{
-				if((i*i + j*j)<=Radio2)
-				{
-								//Octante 1
-							corrRadial->array[radio]+=corr2D->array[i][j];
-							Contados++;
-					
-					if(i!=j)
-					{
-								//Octante 2					
-						corrRadial->array[radio]+=corr2D->array[j][i];
-							Contados++;					
-					}	
-									
-				}else{
-					MasDer--;
-				}
-				i--;
-			}while((i*i + j*j)>RadioInterior2);
-			i=MasDer;
-		}
-		corrRadial->array[radio]/=(float)Contados;
-	}
-	corrRadial->NoEnsambles=corr2D->NoEnsambles;
-	corrRadial->T=corr2D->T;
-	corrRadial->i_max = i_max/2;
-return;
-}
-
-void DoblaCorrelacion(Float2D_MP *corr2D)
-{
-	int i,j;
-	
-	int NDY=corr2D->j_max;
-	int nyred = ( NDY / 2 ) + 1;
-	
-	corr2D->array[NDY][NDY]=corr2D->array[0][0];
-	corr2D->array[0][NDY]=corr2D->array[0][0];
-	corr2D->array[NDY][0]=corr2D->array[0][0];
-	
-	for(i=0;i<nyred;i++)
-	{
-		for(j=0;j<nyred;j++)
-		{
-			if(i==0)
-			{
-				corr2D->array[NDY][j]=corr2D->array[0][j];
-				corr2D->array[NDY][NDY-j]=corr2D->array[0][NDY-j];
-			}
-			if(j==0)
-			{
-				corr2D->array[i][NDY]=corr2D->array[i][0];
-				corr2D->array[NDY-i][NDY]=corr2D->array[NDY-i][0];
-			}
-				corr2D->array[i][j]=(corr2D->array[i][j] + corr2D->array[NDY-i][j] + corr2D->array[i][NDY-j] + corr2D->array[NDY-i][NDY-j])/4.0;
-		}
-	}
-	
-	return;
-}
-
-void ResetFloat1D_MP(Float1D_MP *ARRAY)
-{
-	int i;
-		for(i=0;i<=ARRAY->i_max;i++)
-		{
-			ARRAY->array[i]=0.0;
-		}
-		ARRAY->NoEnsambles=0;
-		ARRAY->T=0;
-		
 return;
 }
 
@@ -1972,18 +2071,6 @@ float NMax_Metabolic;
 return;
 }
 
-void LiberaMemoria(estado *es)
-{
-	free(es->s[0]);
-	free(es->INDICE[0]);
-	free(es->TIPO[0]);
-	free(es->SO);
-	free(es->s);
-	free(es->INDICE);
-	free(es->TIPO);
-return;
-}
-
 float LikelyHood(Float1D_MP *Origin, Float1D_MP *Experiment)
 {
 	float Total=0.0;
@@ -2076,4 +2163,16 @@ void CargaExperiment(Float1D_MP *Experiment)
 	}
 	
 	Experiment->NoEnsambles=1;
+
+
+float Integra(Float1D_MP *Funcion, int inicial, int final)
+{
+	float Resultado=0.0;
+	int i;
+	for(i=inicial;i<=final;i++)
+	{
+		Resultado+=logf((Funcion->array[i])/((float)Funcion->NoEnsambles));
+	}
+	
+return Resultado;
 }

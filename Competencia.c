@@ -63,7 +63,7 @@ Float1D_MP Experiment_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS/SupCrecimiento0(C=1,RC=10)_(NDX,Tmax)@(%d,%d)",NDX,T_max);
+	sprintf(contenedor,"DATOS_TAM/",NDX,T_max);
 	CreaContenedor(contenedor);
 	
 	char arch[300]="";
@@ -79,9 +79,6 @@ char contenedor[150];
 
 
 ///////////////////////////////////// Estado INICIAL:
-CargaExperiment(&Experiment_1);
-GuardaFloat1D_MP(contenedor,"DistTamExperiment",&Experiment_1);
-
 
 modelo.CoaFact=1.0;
 modelo.CoaExp=1.0;
@@ -89,21 +86,6 @@ modelo.MetFact=0.5;
 modelo.MetExp=1.0;
 modelo.ResurcesFact=1.0;
 
-
-model modA;
-modA=modelo;
-
-float likMinMod=10000.0;
-float likMin, likActual;
-int Intentos;
-
-int steps;
-for(steps=0;steps<10000;steps++)
-{
-
-
-likMin=10000.0;
-Intentos=0;
 
 	#pragma omp parallel			///////INICIA PARALLEL
 	{
@@ -155,11 +137,11 @@ Intentos=0;
 			
 	/////////////////////////////////Termina prepara Contenedor MEMORIA de cada PROCESO
 
-			//for(Par=0;Par<MaxPar;Par++)
-			//{
-				//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
-				//ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
-			//}
+			for(Par=0;Par<MaxPar;Par++)
+			{
+				ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
+				ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
+			}
 			
 	//////////////////////////////Barrido Monte CARLO:
 		char distT[50];
@@ -170,12 +152,8 @@ Intentos=0;
 			for(Par=0;Par<MaxPar;Par++)
 			{
 				BarrMCcRyCampTamano(&e[Par], 1.0, &modelo);
-				//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
-				//ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
-				//#pragma omp master
-				//{
-					//GuardaEstadoEn(contenedor,&e[0]);
-				//}
+				ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
+				ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
 			}
 							
 				if((i-(i/50)*50)==1)    //Inicializa cada 100 pasos
@@ -189,30 +167,12 @@ Intentos=0;
 					#pragma omp barrier
 					#pragma omp single
 					{
-						likActual=LikelyHood(&TamDist_1, &Experiment_1);
-						if(likMin>likActual)
-						{
-							likMin=likActual;
-							Intentos=0;
-						}else{
-							Intentos++;
-						}
 						sprintf(distT,"DistTamanos_%d",i);
 						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
 					}
-				
-					if(Intentos>30)
-					{
-						i=T_max;
-					}
-					//printf("T:%d MT: %f, MM:%f\n",i,e[0].Meta_T,e[0].Max_Metabolic);
-						//for(Par=0;Par<MaxPar;Par++)
-						//{
-							//ActualizaDistTamano_MP(&e[Par], &TamDist_1, 'A');
-						//}
 							
-						////ResetFloat2D_MP(&MP_Corr2D_Tamano);						
-						////CFFT_Mark_MP(e, MaxPar, &MP_Corr2D_Tamano, 0, 0);
+						ResetFloat2D_MP(&MP_Corr2D_Tamano);						
+						CFFT_Mark_MP(e, MaxPar, &MP_Corr2D_Tamano, 0, 0);
 						////ResetFloat1D_MP(&MP_Correlacion);
 						////CompactaCorrelacion(&MP_Corr2D_Tamano, &MP_Correlacion);
 						////SumaFloat1D_MP(&MP_Correlacion,&MP_Correlacion_1);
@@ -255,22 +215,7 @@ Intentos=0;
 		}
 	}	/////TERMINA PARALLEL
 
-	if(likMin<likMinMod)
-	{
-		walk=fopen(arch,"a");
-		fprintf(walk,"%f %f %f %f %f %f \n", modelo.CoaFact,modelo.CoaExp,modelo.MetFact,modelo.MetExp,modelo.ResurcesFact, likMin);
-		fclose(walk);
-		modA=modelo;
-		likMinMod=likMin;
-	}
-	printf("procesado el paso %d\n",steps);
-	
-	modelo.CoaFact=modA.CoaFact + (FS_JKISS()-0.5)/2;
-	modelo.CoaExp=modA.CoaExp + (FS_JKISS()-0.5)/2.0;
-	modelo.MetFact=modA.MetFact + (FS_JKISS()-0.5)/2.0;
-	modelo.MetExp=modA.MetExp + (FS_JKISS()-0.5)/2.0;
-	modelo.ResurcesFact=modA.ResurcesFact + (FS_JKISS()-0.5)/2.0;
-}
+
 
 //puts("Guardando informacion...\n");
 //GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);

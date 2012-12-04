@@ -36,9 +36,6 @@ sitio *SO;			/**< A 1 dimensional array of scructs sitio that is a list of the o
 						To find the index of an specific occupied site at (i,j) in this list, one have to look for it in INDICE[i][j]. */
 int **TIPO;			/**< A 2 dimensional array which value at TIPO[i][j] is used to label the species of the individual in (i,j). 
 						If the site in (i,j) is not occupyed the return value is undetermined. */
-float Meta_T;
-float Max_Metabolic;
-int **AGE;
 } estado;
 
 /** General porpuse 2 dimensinal array of float suitable to be used for ensemble averages. */
@@ -89,20 +86,11 @@ int on;
 } Grupo;
 
 typedef struct {
-float CoaFact;
-float CoaExp;
-float MetFact;
-float MetExp;
-float ResurcesFact;	
-} model;
-
-typedef struct {
 int MeanSquare;
 int NoEnsambles;
 int NoMuestras;
 int Muestra;	/** Muestra = 0 : Toma todas las muestras. */
 } CorrDescriptor;
-
 
 extern Grupo GRUPO_INI;
 
@@ -157,8 +145,6 @@ void SetRadioBirth(int rb, int tipo);
  * @see especie 
  * */
 void SetRadioCoa(int rc, int tipo);
-
-void SetRadioCoaIntra(int rc, int tipo);
 
 /** This shuld be called when a rate of the specie parameters is updated, or after setting up all the rates for the first time.  
  * It sets an internal scale factor of the library that is used to map the rates given in units of phisical time, to rates in units of computational Time-steps.
@@ -217,6 +203,52 @@ void EligeUniforme(int i,int j,int radio, sitio *vecino);
  */
 void InsertaIndividuosAleatorio(estado *es, int N, int tipo);
 
+/**
+ * Deprecated(Not efficient): Gives the mean number of neighbours of the system at a given radio.
+ * @param *es the system to analize
+ * @param radio the radio at wich the mean neighbours are going to be counted.
+ */
+float OnPromRadio(estado *es, int radio);  //Deprecated
+
+/**
+ * Deprecated(Not efficient), Gives the correlation at a radio
+ * @param *es System to be analized
+ * @param radio distance at wich obtain the correlation.
+ */
+float FuncionCorrelacion(estado *es,int radio);			//No eficiente
+
+/**
+ * Deprecated(Not efficient), Gives the correlation at a radio
+ * @param *es System to be analized
+ * @param radio distance at wich obtain the correlation.
+ */
+float FuncionCorrelacion2(estado *es,int radio);		//No eficiente
+
+
+/**
+ * Deprecated(Not efficient), Gives the correlation at a radio but just taking into account 4 points. 
+ * @param *es System to be analized
+ * @param radio distance at wich obtain the correlation.
+ */
+float Correlacion(estado *es,int radio);  //No eficiente
+
+/**
+ * Deprecated(Not efficient), Gives the correlation at a radio betwen two species
+ * @param *es System to be analized
+ * @param radio distance at wich obtain the correlation.
+ * @param TipoOrigen The origin species from wich the correlation is going to be obtained.
+ * @param TipoDistante Te target species to wich the correlation is going to be obtained.
+ */
+float FuncionCorrelacionSpecies(estado *es,int radio,int TipoOrigen, int TipoDistante); //No eficiente
+
+/**
+ * Deprecated(Not efficient), Gives the correlation at a radio betwen two species with just 4 points. 
+ * @param *es System to be analized
+ * @param radio distance at wich obtain the correlation.
+ * @param TipoOrigen The origin species from wich the correlation is going to be obtained.
+ * @param TipoDistante Te target species to wich the correlation is going to be obtained.
+ */
+float CorrelacionEspecies(estado *es,int radio,int TipoOrigen, int TipoDistante);
 
 /**
  * Returns the number of individuals of a single species in a system. 
@@ -248,11 +280,10 @@ void AlojaMemoriaEspecie(int tipo);
  * This parameter can be NULL, if just the distribution is needed.
  * @param *RhoDist The distribution of densities is stored in <RhoDist> and assigned the Time-steep of <es>. This parameter can be NULL, 
  * if just the densities are needed.
- * @param Option If 's' is given as an option the distribution of sizes is going to be calculated, any other option calculate the distribution of species types.
  * @see Float2D_MP
  * @see Dist_MP
  */
-void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,Dist_MP *RhoDist, char Option);
+void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,Dist_MP *RhoDist);
 
 /**
  * Allocates the necesary memory for a <Float2D_MP>.
@@ -274,18 +305,6 @@ void IniciaMemoriaInt2D_MP(Int2D_MP *ARRAY);
  * @see Dist_MP
  */
 void IniciaMemoriaDist_MP(Dist_MP *Dist);
-void GeneraEstadoAleatorioTamano(estado *es, float frac, int tipo, int tamano);
-void ActualizaRyCTamano(estado *es, int N, int campo);
-void BarrMCcRyCampTamano(estado *es, float flujo_recursos, model *param);
-void ActualizaDistTamano_MP(estado *e, Float1D_MP *TamDist, char Opcion);
-void ActualizaRecursos_MP(estado *es,Float2D_MP *RhoVsT);
-void ActualizaUniv(estado *es, int N, model *modelo);
-
-/** Calculates the likelyhood of Origin with Experiment 
- * 
- */
-float LikelyHood(Float1D_MP *Origin, Float1D_MP *Experiment);
-void CargaExperiment(Float1D_MP *Experiment);
 
 /**
  * Adds in pairs each element of two arrays <Float2D_MP>
@@ -364,6 +383,16 @@ void ResetDist_MP(Dist_MP *Dist);
 void SetSpecie2(int NoEspecie, float Birth, float Coagulation, float CoagulationIntra, float Dead, float RadioBirth, float RadioCoa, float RadioCoaIntra);
 
 /**
+ * Deprecated: Employs Correlacion that is Deprecated. 
+ */
+void ActualizaCorrelacion_MP(estado *es, Float1D_MP *corr);
+
+/**
+ * Deprecated: Employs CorrelacionEspecies that is Deprecated. 
+ */
+void ActualizaCorrelacionTipo_MP(estado *es, Float1D_MP *corr, int TipoOrigen, int TipoObjetivo);
+
+/**
  * Add the arrays of two <Float1D_MP> objects.
  * @param *Origen pointer to one <Float1D_MP> to be added. This object is not changed.
  * @param *Destino pointer to other <Float1D_MP> to be added. The result is stored in <Destino>. The resulting <Destino>.NoEnsambles is the sum of the original two
@@ -378,6 +407,12 @@ void SumaFloat1D_MP(Float1D_MP *Origen,Float1D_MP *Destino);
  * @param i_max The maximum value of the array in <Float1_MP>. This is needed for memory allocation.
  */
 void InicializaFloat1D_MP(Float1D_MP *Objeto, int i_max);
+
+/**
+ * Deprecated: Obains the 2 dimensional correlation and writtes it to a hardcoded file.
+ * Was used for testing porpuses only.
+ */
+void CorrXY(estado *es);
 
 /**
  * Deprecated: to few options plus not treat safe. Obtains the 2 dimensional correlation of all individuals of a system. 
@@ -425,6 +460,14 @@ void ResetFloat1D_MP(Float1D_MP *ARRAY);
 void DoblaCorrelacion(Float2D_MP *corr2D);
 
 /**
+ * Makes the integral of an array, with a hard coded integrand. 
+ * @param *Function array to be integrated
+ * @param inicial lower bound of the integral.
+ * @param final upper bound of the integral
+ */
+float Integra(Float1D_MP *Funcion, int inicial, int final);
+
+/**
  * Free the memory allocated for a system <estado>.
  * @param *es System to be freed.
  */
@@ -442,4 +485,3 @@ void LiberaMemoriaFloat2D_MP(Float2D_MP *ARRAY);
  */
 void LiberaMemoriaFloat1D_MP(Float1D_MP *Objeto);
 void CFFT_Univ_MP(estado *es, CorrDescriptor *Especifica, Float2D_MP *correlacion, Grupo *TipoOrigen, Grupo *TipoDestino);
-
