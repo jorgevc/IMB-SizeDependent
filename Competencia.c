@@ -41,9 +41,9 @@ omp_set_num_threads(4);
 
 
 
-//Float2D_MP MP_RhoVsT_1;		
-//	int MaximoTamano = 1;
-//		InicializaFloat2D_MP(&MP_RhoVsT_1, T_max, MaximoTamano, 0);
+Float2D_MP MP_RhoVsT_1;		
+	int MaximoTamano = 1;
+		InicializaFloat2D_MP(&MP_RhoVsT_1, T_max, MaximoTamano, 0);
 		
 //Dist_MP MP_RhoDist_1;
 //float TamParticion=0.0001;
@@ -110,8 +110,8 @@ modelo.ResurcesFact=1.0;
 	/////////////////////////////////////Termina Estado INICIAL
 	//////////////////////////Prepara Contenedor en Memoria de cada proceso Para Mejorar rendimiento (optimizar el uso de cache de cada procesador)
 
-	//	Float2D_MP MP_RhoVsT;	
-		//		InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano, MaxPar);
+		Float2D_MP MP_RhoVsT;	
+				InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano, MaxPar);
 
 		//Dist_MP MP_RhoDist;
 		//	InicializaDist_MP(&MP_RhoDist, TamParticion);
@@ -143,15 +143,11 @@ modelo.ResurcesFact=1.0;
 			{
 				BarrMCcRyCampTamano(&e[Par], 1.0, &modelo);
 				//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
-				//ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
+				ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
 			}
 							
 				if((i-(i/50)*50)==1)    //Inicializa cada 100 pasos
 				{
-					#pragma omp single
-					{
-						GuardaEstadoEn(contenedor, &e[0]);
-					}
 					
 					for(Par=0;Par<MaxPar;Par++)
 					{
@@ -173,16 +169,19 @@ modelo.ResurcesFact=1.0;
 		
 	//////////////////////////////Termina Monte CARLO
 
-	//	SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
+		SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
 		
 		//Libera Memoria
 		for(Par=0;Par<MaxPar;Par++)
 		{
 			LiberaMemoria(&e[Par]);
 		}
+		
+		LiberaMemoriaFloat2D_MP(MP_RhoVsT);
 	}	/////TERMINA PARALLEL
 
-//GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
-
+GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
+LiberaMemoriaFloat2D_MP(MP_RhoVsT_1);
+LiberaMemoriaFloat1D_MP(TamDist_1);
 return;
 }
