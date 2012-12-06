@@ -177,11 +177,11 @@ modelo.ResurcesFact=1.0;
 			LiberaMemoria(&e[Par]);
 		}
 		
-		LiberaMemoriaFloat2D_MP(MP_RhoVsT);
+		LiberaMemoriaFloat2D_MP(&MP_RhoVsT);
 	}	/////TERMINA PARALLEL
 
 GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
-LiberaMemoriaFloat2D_MP(MP_RhoVsT_1);
-LiberaMemoriaFloat1D_MP(TamDist_1);
+LiberaMemoriaFloat2D_MP(&MP_RhoVsT_1);
+LiberaMemoriaFloat1D_MP(&TamDist_1);
 return;
 }
