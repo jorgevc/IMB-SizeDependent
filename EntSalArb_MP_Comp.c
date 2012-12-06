@@ -32,17 +32,6 @@ int i,j;
 	}
 }
 
-FILE* OpenFile(char *nombre)
-{
-FILE *aA;
-char archivo[200]="DATOS/";
-// mkdir(archivo,00777); Descomentar para crear el directorio si es que no existe.
-strcat(archivo,nombre);
-
-		aA=fopen(archivo, "w");
-		fputs("# x y tipo tamano\n",aA);
-		return aA;
-}
 
 void CreaContenedor(char *nombre)
 {
@@ -53,18 +42,16 @@ fprintf(stdout,"Contenedor creado:\n %s \n",nombre);
 return;
 }
 
-void GuardaEstadoEn(char *nombre, estado *es)
+void GuardaEstadoEn(char *contenedor, estado *es)
 {
 int T=es->T;
-char paso[15];
-char archivo[250];
+char archivo[550];
 FILE *datos;
 
-sprintf(paso,"/T_%03d",T);
-strcpy(archivo,nombre);
-strcat(archivo,paso);
+sprintf(archivo,"%s/T_%03d",contenedor,T);
 
-	datos=OpenFile(archivo);
+	datos=fopen(archivo, "w");
+	fputs("# x y tipo tamano\n",datos);
 	GuardaEstado(es, datos);
 	fclose(datos);
 	
@@ -75,14 +62,12 @@ return;
 FILE* AbreRhoVsTEn(char *contenedor)
 {
 FILE *aA;
-char archivo[200]="DATOS/";
+char archivo[200];
 // mkdir(archivo,00777); Descomentar para crear el directorio si es que no existe.
-strcat(archivo,contenedor);
-strcat(archivo,"/RhoVsT");
+
+sprintf(archivo,"%s/RhoVsT",contenedor);
 		aA=fopen(archivo, "w");
 		fputs("# t   rho   tipo (tipo 0 es la total)\n",aA);
-		fclose(aA);
-		aA=fopen(archivo, "a");
 		return aA;
 }
 
@@ -213,37 +198,6 @@ void ActualizaNoSpeciesVsT(FILE *archivo,int Species, int T)
 fprintf(archivo,"%d   %d\n",T,Species);
 return;
 }
-
-
-void GuardaCorrelacion(estado *es,int Rini, int Rfin,char *contenedor)
-{
-FILE *corr;
-int T=es->T;
-int r;
-float g;
-char archivo[250]="DATOS/";
-char nombre[200];
-sprintf(nombre,"/Correlacion_Simple_%03d",T);
-strcat(archivo,contenedor);
-strcat(archivo,nombre);
-
-        corr=fopen(archivo,"w");
-	if(corr==NULL){
-		puts("No se pudo abrir archivo para guardar correlacion\n");
-		return;
-	}
-
-	fputs("#r   g\n",corr);
-	for(r=Rini;r<=Rfin;r++)
-	{
-		g=FuncionCorrelacion2(es,r);
-		fprintf(corr,"%d   %f\n",r,g);
-	}
-        fclose(corr);
-        
-return;
-}
-
 
 
 void GuardaCorrelacion_MP(char *contenedor, char *prefix, Float1D_MP *corr)

@@ -595,11 +595,11 @@ if(Dist!=NULL && Dist->T!=T)
 
 	if(NoEspecies!=0)
 	{
-		if(Option=='s')
+		if(Option=='s')  //opcion 's' significa size: densidad de individuos segun su tamano
 		{
 			for(n=1;n<=ON;n++)
 			{
-				if(s[SO[n].i][SO[n].j]<=NoEspecies)
+				if(s[SO[n].i][SO[n].j]<NoEspecies)
 				{
 					rhoVec[s[SO[n].i][SO[n].j]]++;
 				}else{
@@ -972,7 +972,7 @@ int radioCre;
 int radioCoa;
 int ho = (es->TIPO[i][j] * 10) - 5;	//Nicho0 cambiar cuando cambie numero de especies distinto a 50 (solo en nicho es necesario)
 	
-int max_tamano = 50;
+
 //float bmin=14.0;
 float NMax_Metabolic; 
 	
@@ -980,20 +980,20 @@ float NMax_Metabolic;
 	
 	
 	Dead=parametros[es->TIPO[i][j]].Dead; // modelo neutral y J-C
-	// rdead = ((float)(es->TIPO[i][j]-500)/5000.0)+0.05; //Modelo Lottery
+	
 	Birth=parametros[es->TIPO[i][j]].Birth;
-//	Dead=Birth - (Birth - parametros[es->TIPO[i][j]].Dead) * exp(-pow(campo - ho,2.0)/20000.0);  // funcion nicho0 remaster
 	
 //	pCoa2=parametros[es->TIPO[i][j]].CoagulationIntra/Max_Metabolic;
 	pDead=Dead/es->Max_Metabolic;	//Asignar Max_Metabolic, si no hay division entre cero.
 	pCreacion = Birth/es->Max_Metabolic;
 	
-	//if(s[i][j]<=max_tamano)
-	//{
-		Coagulation1 = (parametros[es->TIPO[i][j]].Coagulation*((float)(s[i][j])));
-	//}else{
-	//	Coagulation1 = (parametros[es->TIPO[i][j]].Coagulation*((float)(max_tamano)));
-	//}
+	int max_tamano = 200;
+	if(s[i][j]<=max_tamano)
+	{
+		Coagulation1 = (float)s[i][j];
+	}else{
+		Coagulation1 = (float)max_tamano;
+	}
 	
 	//Coagulation1 = parametros[es->TIPO[i][j]].Coagulation*(max_tamano*(1.0-exp(-((float)s[i][j])/bmin)));
 	//Coagulation1 = (parametros[es->TIPO[i][j]].Coagulation*((float)(s[i][j])));
@@ -1037,49 +1037,27 @@ float NMax_Metabolic;
 				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
 				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
 				
-				if(s[vecino.i][vecino.j]<0)  //Si hay comida, como. 
+				if(s[vecino.i][vecino.j]<=0)  //Si hay comida, como. 
 				{
-					s[vecino.i][vecino.j]=0;
-					//pCrecer=(2.0*parametros[es->TIPO[i][j]].Coagulation*((float)s[i][j])*exp(-pow((float)s[i][j]/(float)max_tamano,2.0)))/es->Max_Metabolic;
-					//pCrecer=(Coagulation1 - (parametros[es->TIPO[i][j]].Coagulation)*((float)(2*max_tamano))*pow((float)s[i][j]/((float)(2*max_tamano)),3.0))/es->Max_Metabolic;
-					if(s[i][j]<=(max_tamano-5))
-					{
-						pCrecer = (parametros[es->TIPO[i][j]].Coagulation*((float)(s[i][j])))/es->Max_Metabolic;
-					}else{
-						if(s[i][j]>=(max_tamano+40))
-						{
-						pCrecer = (parametros[es->TIPO[i][j]].Coagulation*((float)(2*max_tamano-s[i][j])))/es->Max_Metabolic;
-						}else{
-							pCrecer = (parametros[es->TIPO[i][j]].Coagulation*((float)(max_tamano-5)))/es->Max_Metabolic;
-						}
-					}
-		
-						if(pCrecer>0.0 && Rand<=(pDead + pCreacion + pCrecer))
-						{
-							s[i][j]++;
-						
+					s[vecino.i][vecino.j]=0;			
+							s[i][j]++;			
 							NMax_Metabolic = Birth + Dead + Coagulation1 + parametros[es->TIPO[i][j]].CoagulationIntra;
 							if(es->Max_Metabolic < NMax_Metabolic)
 							{
 								es->Max_Metabolic = NMax_Metabolic;
 							}
-						}
+				}else{
+					s[vecino.i][vecino.j]=0;
+					SO[es->INDICE[vecino.i][vecino.j]]=SO[(es->ON)];
+					es->INDICE[SO[es->ON].i][SO[es->ON].j]=es->INDICE[vecino.i][vecino.j];
+					(es->ON)--;	
+					es->TIPO[vecino.i][vecino.j]=0;
+					es->AGE[vecino.i][vecino.j]=0;		
 				}
 			}
 		}
 	}
 	
-	es->AGE[i][j]++;
-	
-	if((es->Meta_T)>(2.0*s[i][j]))
-	{
-		s[i][j]=0;
-		SO[N]=SO[(es->ON)];
-		es->INDICE[SO[es->ON].i][SO[es->ON].j]=N;
-		(es->ON)--;	
-		es->TIPO[i][j]=0;
-		es->AGE[i][j]=0;
-	}
 	
 	
 return;
@@ -1113,6 +1091,7 @@ TEnteroAnterior = floor(es->Meta_T);
 				//}
 			//}
 			ActualizaUniv(es, Indice, param);
+			//ActualizaRyCTamano(es, Indice, 0);
 		}else{
 			DT=2.0;
 		}
@@ -1127,7 +1106,7 @@ return;
 
 void ActualizaDistTamano_MP(estado *es, Float1D_MP *TamDist, char Opcion)
 {
-	int T=es->T;
+int T=es->T;
 int NDX = es->NDX;
 int NDY = es->NDY;
 int ON = es->ON;
@@ -1146,6 +1125,7 @@ int max_tam=0;
 		}
 
 int tot=max_tam + 1;
+
 if(Opcion=='R')
 {
 	tot=(int)sqrt((double)max_tam) + 1; 
@@ -1183,7 +1163,7 @@ memset(rhoVec,0,tot * sizeof(int));
 				{
 					prob_tam=((float)rhoVec[n])/((float)(ON));
 					#pragma omp atomic
-					TamDist->array[n]+=prob_tam;
+					TamDist->array[n]+=prob_tam; //peligro semetation fault si 'n' es mas grande que el tamano de TamDist->array
 				}
 		}
 		
@@ -1980,7 +1960,12 @@ float NMax_Metabolic;
 	Birth=parametros[es->TIPO[i][j]].Birth;
 	CoagulationIntra=parametros[es->TIPO[i][j]].CoagulationIntra;
 
-	Coagulation1 = ((modelo->CoaFact)*(pow((float)(s[i][j]),modelo->CoaExp)));
+	if(s[i][j]<=20)
+	{
+	Coagulation1 = (float)s[i][j];
+	}else{
+		Coagulation1 = 0.5*(float)(s[i][j]-20) + 20.0;
+	}
 	
 	pCreacion = Birth/es->Max_Metabolic;
 	pDead=Dead/es->Max_Metabolic;
@@ -2024,11 +2009,12 @@ float NMax_Metabolic;
 				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
 				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
 				
-				//if(s[i][j]>50)
+				//pMetabolic=(modelo->MetFact*pow((float)(s[i][j]),modelo->MetExp))/es->Max_Metabolic;
+				//if(s[i][j]>20)
 				//{
-					pMetabolic=(modelo->MetFact*pow((float)(s[i][j]),modelo->MetExp))/es->Max_Metabolic;
+					//pMetabolic=1.5*(float)s[i][j]/es->Max_Metabolic;
 				//}else{
-				//	pMetabolic=0.0;
+					pMetabolic=0.5*(float)s[i][j]/es->Max_Metabolic;
 				//}
 				
 				
@@ -2163,6 +2149,8 @@ void CargaExperiment(Float1D_MP *Experiment)
 	}
 	
 	Experiment->NoEnsambles=1;
+return;
+}
 
 
 float Integra(Float1D_MP *Funcion, int inicial, int final)
@@ -2176,3 +2164,4 @@ float Integra(Float1D_MP *Funcion, int inicial, int final)
 	
 return Resultado;
 }
+

@@ -8,17 +8,13 @@ Copyright 2012 Jorge Velazquez
 #include "libPP_6.1.h"
 #include "EntSalArb_MP_Comp.h"
 #include "GNA.h"
-//#include "ControlDinamico.h"
 
 main(){	
-//int clave=124;
-//int *servicio = activa_escucha(clave);
-//int *servicio;
-//*servicio=0;
+
 ///////////////////////////Inicializa parametros de la simulacion
 int NDX=500;
 int NDY=NDX;
-int T_max = 10000;
+int T_max = 1500;
 int NoEnsambles=4;
 
 float Birth1= 0.0;
@@ -46,32 +42,26 @@ omp_set_num_threads(4);
 
 
 //Float2D_MP MP_RhoVsT_1;		
-//	int MaximoTamano = 500;
-//		InicializaFloat2D_MP(&MP_RhoVsT_1, T_max, MaximoTamano + 1, NoEnsambles);
+//	int MaximoTamano = 1;
+//		InicializaFloat2D_MP(&MP_RhoVsT_1, T_max, MaximoTamano, 0);
 		
 //Dist_MP MP_RhoDist_1;
 //float TamParticion=0.0001;
 //	InicializaDist_MP(&MP_RhoDist_1, TamParticion);
 	
 Float1D_MP TamDist_1;
-		InicializaFloat1D_MP(&TamDist_1, T_max*2);
+		InicializaFloat1D_MP(&TamDist_1, T_max+10);
 		
-Float1D_MP Experiment_1;
-		InicializaFloat1D_MP(&Experiment_1, 41);
+//Float1D_MP Experiment_1;
+	//	InicializaFloat1D_MP(&Experiment_1, 41);
 
 //Float1D_MP MP_Correlacion_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/",NDX,T_max);
+	sprintf(contenedor,"DATOS_TAM/DI=0.5_CF=1.0_MF=0.5:50:1.5_RC=10_NX=500");
 	CreaContenedor(contenedor);
 	
-	char arch[300]="";
-	sprintf(arch,"%s/walk.dat",contenedor);
-	FILE *walk;
-	walk=fopen(arch, "a");
-	fprintf(walk,"CoaFact CoaExp MetFact MetExp ResourcesFact LikMin \n");
-	fclose(walk);
 	
 //char contenedorLec[150];	
 	//sprintf(contenedorLec,"BrwRemNich0MP_(B,D,C,RB,RC)@(%1.3f,%1.3f,%1.3f,%d,%d)_(NDX,Tmax)@(%d,%d)",Birth1,Dead1,Coagulation1,RadioBirth1,RadioCoa1,NDX,T_max);
@@ -120,9 +110,9 @@ modelo.ResurcesFact=1.0;
 	/////////////////////////////////////Termina Estado INICIAL
 	//////////////////////////Prepara Contenedor en Memoria de cada proceso Para Mejorar rendimiento (optimizar el uso de cache de cada procesador)
 
-		//Float2D_MP MP_RhoVsT;	
-		//		InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano + 2, MaxPar);
-				
+	//	Float2D_MP MP_RhoVsT;	
+		//		InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano, MaxPar);
+
 		//Dist_MP MP_RhoDist;
 		//	InicializaDist_MP(&MP_RhoDist, TamParticion);
 			
@@ -137,11 +127,11 @@ modelo.ResurcesFact=1.0;
 			
 	/////////////////////////////////Termina prepara Contenedor MEMORIA de cada PROCESO
 
-			for(Par=0;Par<MaxPar;Par++)
-			{
-				ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
-				ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
-			}
+			//for(Par=0;Par<MaxPar;Par++)
+			//{
+				//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
+				//ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
+			//}
 			
 	//////////////////////////////Barrido Monte CARLO:
 		char distT[50];
@@ -152,12 +142,16 @@ modelo.ResurcesFact=1.0;
 			for(Par=0;Par<MaxPar;Par++)
 			{
 				BarrMCcRyCampTamano(&e[Par], 1.0, &modelo);
-				ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
-				ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
+				//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
+				//ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
 			}
 							
 				if((i-(i/50)*50)==1)    //Inicializa cada 100 pasos
 				{
+					#pragma omp single
+					{
+						GuardaEstadoEn(contenedor, &e[0]);
+					}
 					
 					for(Par=0;Par<MaxPar;Par++)
 					{
@@ -171,42 +165,15 @@ modelo.ResurcesFact=1.0;
 						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
 					}
 							
-						ResetFloat2D_MP(&MP_Corr2D_Tamano);						
-						CFFT_Mark_MP(e, MaxPar, &MP_Corr2D_Tamano, 0, 0);
-						////ResetFloat1D_MP(&MP_Correlacion);
-						////CompactaCorrelacion(&MP_Corr2D_Tamano, &MP_Correlacion);
-						////SumaFloat1D_MP(&MP_Correlacion,&MP_Correlacion_1);
-						
-						//#pragma omp barrier
-						//#pragma omp single
-						//{
-							//sprintf(distT,"DistTamanos_%d",i);
-							//GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
-							////sprintf(distT,"DistTamRad_%d",i);
-							////GuardaFloat1D_MP(contenedor,distT,&TamDistRad_1);
-							////sprintf(prefix,"Mark");
-							////GuardaCorrelacion_MP(contenedor, prefix , &MP_Correlacion_1);
-						//}
 				
 					init_JKISS();
-					//printf("Se ha reinicializado JKISS (c/50pasos) paso:%d, threath:%d \n",i,id);
 				}
 
 		}
 		
 	//////////////////////////////Termina Monte CARLO
 
-		//SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
-		//SumaFloat1D_MP(&TamDist,&TamDist_1);
-		
-		//ResetFloat2D_MP(&MP_Corr2D_Tamano);						
-		//CFFT_Mark_MP(e, MaxPar, &MP_Corr2D_Tamano, 10, 10);
-		//ResetFloat1D_MP(&MP_Correlacion);
-		//CompactaCorrelacion(&MP_Corr2D_Tamano, &MP_Correlacion);
-		//SumaFloat1D_MP(&MP_Correlacion,&MP_Correlacion_1);
-		//sprintf(prefix,"T_%d_Mark",i);
-		//GuardaCorrelacion_MP(contenedor, prefix , &MP_Correlacion_1);
-		
+	//	SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
 		
 		//Libera Memoria
 		for(Par=0;Par<MaxPar;Par++)
@@ -215,17 +182,7 @@ modelo.ResurcesFact=1.0;
 		}
 	}	/////TERMINA PARALLEL
 
-
-
-//puts("Guardando informacion...\n");
 //GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
-//char distTam[50];
-//sprintf(distTam,"DistTamanos_%d",(T_max-1));
-//GuardaFloat1D_MP(contenedor,distTam,&TamDist_1);
-//GuardaFloat1D_MP(contenedor,"DistTamRad",&TamDist_1);
-
-
-//cierra_escucha();
 
 return;
 }
