@@ -135,13 +135,16 @@ modelo.ResurcesFact=1.0;
 			
 	//////////////////////////////Barrido Monte CARLO:
 		char distT[50];
+		
+		Rate_log rate;
+		InitRate_log(&rate,MaximoTamano);
 		//char prefix[10];
 		int i;
 		for(i=1;i<=T_max;i++)
 		{
 			for(Par=0;Par<MaxPar;Par++)
 			{
-				BarrMCcRyCampTamano(&e[Par], 1.0, &modelo);
+				BarrMCcRyCampTamano(&e[Par], 1.0, &modelo, &rate);
 				//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
 				ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
 			}

@@ -103,6 +103,14 @@ int NoMuestras;
 int Muestra;	/** Muestra = 0 : Toma todas las muestras. */
 } CorrDescriptor;
 
+typedef struct {
+int *GrowthNo;
+int *TotalNo;
+float *Growth;
+int i_max;
+int *NoEnsambles;
+} Rate_log;
+
 
 extern Grupo GRUPO_INI;
 
@@ -276,10 +284,10 @@ void IniciaMemoriaInt2D_MP(Int2D_MP *ARRAY);
 void IniciaMemoriaDist_MP(Dist_MP *Dist);
 void GeneraEstadoAleatorioTamano(estado *es, float frac, int tipo, int tamano);
 void ActualizaRyCTamano(estado *es, int N, int campo);
-void BarrMCcRyCampTamano(estado *es, float flujo_recursos, model *param);
+void BarrMCcRyCampTamano(estado *es, float flujo_recursos, model *param, Rate_log *rate);
 void ActualizaDistTamano_MP(estado *e, Float1D_MP *TamDist, char Opcion);
 void ActualizaRecursos_MP(estado *es,Float2D_MP *RhoVsT);
-void ActualizaUniv(estado *es, int N, model *modelo);
+void ActualizaUniv(estado *es, int N, model *modelo, Rate_log *rate);
 
 /** Calculates the likelyhood of Origin with Experiment 
  * 
@@ -443,3 +451,5 @@ void LiberaMemoriaFloat2D_MP(Float2D_MP *ARRAY);
 void LiberaMemoriaFloat1D_MP(Float1D_MP *Objeto);
 void CFFT_Univ_MP(estado *es, CorrDescriptor *Especifica, Float2D_MP *correlacion, Grupo *TipoOrigen, Grupo *TipoDestino);
 
+void InitRate_log(Rate_log *rate,const int Size);
+void FreeRate_log(Rate_log *rate);

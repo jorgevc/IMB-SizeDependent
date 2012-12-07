@@ -1063,7 +1063,7 @@ float NMax_Metabolic;
 return;
 }
 
-void BarrMCcRyCampTamano(estado *es,float flujo_recursos,model *param)
+void BarrMCcRyCampTamano(estado *es,float flujo_recursos, model *param, Rate_log *rate)
 {
 int Indice,i,vtipo;
 float DT=0.0;
@@ -1071,11 +1071,21 @@ float TMetabolicIni=es->Meta_T;
 float LMax_Metabolic=es->Max_Metabolic;
 float TEnteroAnterior;
 float TMetabolicActual;
+
+//////////// rate internals
+int GrNo[rate->i_max];
+int TN[rate->i_max];
+
+rate->GrowthNo=GrNo;
+rate->TotalNo=TN;
+
+	memset(rate->GrowthNo,0,rate->i_max * sizeof(int)); 
+	memset(rate->TotalNo,0,rate->i_max * sizeof(int)); 
+////////// END rate internals
+
+	TEnteroAnterior = floor(es->Meta_T);
 	
-TEnteroAnterior = floor(es->Meta_T);
-	
-	while(DT<1.0){
-		if((es->ON) != 0){
+	while(DT<1.0 && es->ON>0){
 			TMetabolicActual= TMetabolicIni + DT/LMax_Metabolic;
 			if(TMetabolicActual - TEnteroAnterior >=1.0)
 			{
@@ -1090,13 +1100,19 @@ TEnteroAnterior = floor(es->Meta_T);
 			//printf("llega DT:%f\n",DT);
 				//}
 			//}
-			ActualizaUniv(es, Indice, param);
+			ActualizaUniv(es, Indice, param, rate);
 			//ActualizaRyCTamano(es, Indice, 0);
-		}else{
-			DT=2.0;
-		}
 	}
 	
+int size;
+	for(size=1;size<=rate->i_max;size++)
+	{
+		if(rate->TotalNo[size]>0)
+		{
+			rate->Growth[size]+=(float)rate->GrowthNo[size]/(float)rate->TotalNo[size];
+			rate->NoEnsambles[size]++;
+		}
+	}
 
 (es->T)++;
 es->Meta_T=TMetabolicActual;
@@ -1935,7 +1951,7 @@ fftw_free(out2);
 return;
 }
 
-void ActualizaUniv(estado *es, int N, model *modelo)
+void ActualizaUniv(estado *es, int N, model *modelo, Rate_log *rate)
 {
 float Rand; 
 float pDead, pCreacion, pCoagulation1, Dead, Birth, CoagulationIntra, Coagulation1, pMetabolic;
@@ -1955,6 +1971,7 @@ float NMax_Metabolic;
 	
 	Rand = F_JKISS();
 	
+	rate->TotalNo[s[i][j]]++;  //1)Comentar si no es necesario, quita eficiencia.
 	
 	Dead=parametros[es->TIPO[i][j]].Dead; 
 	Birth=parametros[es->TIPO[i][j]].Birth;
@@ -2028,8 +2045,10 @@ float NMax_Metabolic;
 					s[vecino.i][vecino.j]=0;
 						if(es->AGE[i][j]<0)		//Si he llenado las necesidades de metabolizmo crezco
 						{
+							rate->GrowthNo[s[i][j]]++;    //1)Comentar si no es necesario, quita eficiencia.
 							s[i][j]++;
 							es->AGE[i][j]=0;
+							
 						
 							NMax_Metabolic = Birth + Dead + Coagulation1 + CoagulationIntra;
 							if(es->Max_Metabolic < NMax_Metabolic)
@@ -2055,6 +2074,26 @@ float NMax_Metabolic;
 	}	
 	
 return;
+}
+
+void InitRate_log(Rate_log *rate,const int Size)
+{
+	rate->Growth=(float *)calloc(Size+1, sizeof(float));
+	rate->NoEnsambles=(int *)calloc(Size+1, sizeof(int));
+		unsigned int i;
+		for(i=0;i<=Size;i++)
+		{
+			rate->Growth[i]=0.0;
+			rate->NoEnsambles[i]=0;
+		}
+		rate->i_max=Size;
+return;
+}
+
+void FreeRate_log(Rate_log *rate)
+{
+	free(rate->Growth);
+	free(rate->NoEnsambles);
 }
 
 float LikelyHood(Float1D_MP *Origin, Float1D_MP *Experiment)
