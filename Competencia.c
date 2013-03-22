@@ -18,12 +18,12 @@ int T_max = 1500;
 int NoEnsambles=4;
 
 float Birth1= 0.0;
-float Coagulation1= 2.0; //Brown usa: 0.00002; 
-float CoaIntra= 0.0000; //Modelo J-C 0.0008
+float Coagulation1= 2.0;  
+float CoaIntra= 0.0000; 
 float Dead1= 0.0;
 int RadioBirth1= 10;
 int RadioCoa1= 10;
-int RadioCoaIntra1= 0;  //Modelo Heteromyopia 20
+int RadioCoaIntra1= 0;  
 
 int CantidadEspecies=1;
 

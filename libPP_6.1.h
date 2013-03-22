@@ -6,7 +6,7 @@ int i;			/**< i coordinate, could be thinked as the X coordinate*/
 int j;			/**< j coordinate, could be thinked as the Y coordinate*/ 
 } sitio;
 
-/** Contains the parameters describing the individuals of a species. */
+/** Contains the parameters describing a species. */
 typedef struct {
 float Birth;			/**< Birth rate of the species*/
 float Coagulation;		/**< Inter-Competition rate of the species. 
@@ -21,6 +21,13 @@ int RadioCoa;			/**< Radio within Inter-Competion acts in units of lattice sites
 int RadioCoaIntra;		/**< Radio within Intra-Competion acts in units of lattice sites. */
 } especie;
 
+typedef struct {
+int species;
+int size;
+int radio;
+int metabolism;
+} Individual;
+
 /** Contains the state of the system(lattice). */
 typedef struct {
 int NDX;			/**< The size of the lattice in the i coordinate (X coordinate). */
@@ -28,17 +35,15 @@ int NDY;			/**< The size of the lattice in the j coordinate (Y coordinate). */
 int T;				/**< The Time-steeps that the sistem has been evolve since the begining of the simulation. 
 						It is incremented by one, each time the instance is passed to BarrMCcRyCamp(estado *es) */
 int ON;				/**< The total number of occupied sites in the lattice. */
-int **s; 			/**< A 2 dimensional array of int representing the actual lattice(system). 
+int **s; 			/**< A 2 dimensional array of individuals representing the actual lattice(system). 
 						A value of 0 in s[i][j] represent an empy site in (i,j). A value > 0 represent an occupy site.*/
 int **INDICE;		/**< A 2 dimensional array which value at INDICE[i][j] is the index of an OCCUPIED site at (i,j) on a list 
 						of the occupied sites. If (i,j) is not occupyed the return value is undetermined. */
 sitio *SO;			/**< A 1 dimensional array of scructs sitio that is a list of the occupied sites. 
 						To find the index of an specific occupied site at (i,j) in this list, one have to look for it in INDICE[i][j]. */
-int **TIPO;			/**< A 2 dimensional array which value at TIPO[i][j] is used to label the species of the individual in (i,j). 
-						If the site in (i,j) is not occupyed the return value is undetermined. */
 float Meta_T;
 float Max_Metabolic;
-int **AGE;
+Individual *individuals;
 } estado;
 
 /** General porpuse 2 dimensinal array of float suitable to be used for ensemble averages. */
@@ -194,20 +199,6 @@ void ResetEstado(estado *es);
  * */
 void GeneraEstadoAleatorio(estado *es, float frac, int tipo);
 
-/**
- * Update an individual of a system <*es>. 
- * @param *es the system (lattice)
- * @param N the index of the individual that is going to be updated @see estado::INDICE
- * @param campo In the niche model it is used to simulate the enviromental niche.
- */
-void ActualizaRyC(estado *es, int N, int campo);
-
-/**
- * Makes the system <*es> evolve one Time-step. 
- * One Time-step is counted when on average all the individuals in the system has been updated once.
- * @param *es pointer to the struct 'estado' that is going to be evolved. 
- */
-void BarrMCcRyCamp(estado *es);
 
 /**
  * Chouse a neighbour(occupied site) of (i,j) within a radio with equal probabiliy of each neighbour to be picked. 
@@ -239,7 +230,20 @@ int CuentaEspecie(estado *es, int tipo);
  * @param i,j the site where the individual is going to be inserted.
  * @param tipo The kind of specie of the individual to be inserted. @see especie , @see SetSpecie2. 
  */
-void InsertaIndividuoEn(estado *es,int i,int j,int tipo);
+void InsertaIndividuoEn(estado *es,int i,int j,int tipo,int overWrite);
+
+/**
+ * Inserts and Individual to a specified location. 
+ * @param *es The system in wich the individual is going to be inserted.
+ * @param i,j the site where the individual is going to be inserted.
+ * @param individual The individual to be inserted. @see Individual.
+ * @param overWrite if set to 1 it will overWrite the value in that site. Otherwise just insert 
+ * individual if es->s[i][j]<=0 .
+ * Return value 1 on inserted, 0 on not inserted -1 on error 
+ */
+int InsertIndividualAt(estado *es,int i,int j,Individual individual,int overWrite);
+
+void KillIndividual(estado *es, int N);
 
 /**
  * Allocate memory to store the parameters of a specie. Lowest numbers as possible should be used to save memory.

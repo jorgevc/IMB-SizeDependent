@@ -115,8 +115,6 @@ void AlojaMemoria(estado *es, int NDX, int NDY)
 int *imem;
 int *INDmem;
 sitio *SOmem;
-int *TIPOmem;
-int *AGEmem;
 int col, ile;
 int k;
 col = NDY + 1;
@@ -125,28 +123,22 @@ ile = NDX + 1;
 	imem = (int *)malloc(col * ile * sizeof(int));
 	INDmem = (int *)malloc(col * ile * sizeof(int));
 	SOmem = (sitio *)malloc(col * ile * sizeof(sitio));
-	TIPOmem = (int *)malloc(col * ile * sizeof(int));
-	AGEmem = (int *)malloc(col * ile * sizeof(int));
-	if (imem == NULL || INDmem == NULL || SOmem == NULL || TIPOmem == NULL || AGEmem == NULL)
+
+	if (imem == NULL || INDmem == NULL || SOmem == NULL )
 	{	
 		puts("\nNo se pudo alojar memoria para el estado\n");
 		if(imem == NULL){puts("Memoria para rejilla fallo\n");}
 		if(INDmem == NULL){puts("Memoria para inices de lista fallo\n");}
 		if(SOmem == NULL){puts("Memoria Lista de Sitios fallo\n");}
-		if(TIPOmem == NULL){puts("Memoria TIPOS fallo\n");}
 		exit(0);
 	}
 	memset(imem,0,col * ile * sizeof(int));
 	memset(INDmem,0,col * ile * sizeof(int));
 	memset(SOmem,0,col * ile * sizeof(sitio));
-	memset(TIPOmem,0,col * ile * sizeof(int));
-	memset(AGEmem,0,col * ile * sizeof(int));
 	es->s = (int **)malloc(ile * sizeof(int *));
 	es->INDICE = (int **)malloc(ile * sizeof(int *));
 	es->SO = SOmem;
-	es->TIPO = (int **)malloc(ile * sizeof(int *));
-	es->AGE = (int **)malloc(ile * sizeof(int *));
-	if ((*es).s == NULL || (*es).INDICE == NULL || (*es).TIPO == NULL || (*es).AGE == NULL)
+	if ((*es).s == NULL || (*es).INDICE == NULL)
 	{	
 		puts("\nNo se pudo alojar memoria para los apuntadores de la memoria\n");
 		exit(0);
@@ -155,8 +147,6 @@ ile = NDX + 1;
 	{
 		es->s[k] = imem + (k * col);
 		es->INDICE[k] = INDmem + (k * col);
-		es->TIPO[k] = TIPOmem + (k * col);
-		es->AGE[k] = AGEmem + (k * col);
 	}
 	es->NDX = NDX;
 	es->NDY = NDY;
@@ -171,11 +161,10 @@ void LiberaMemoria(estado *es)
 {
 	free(es->s[0]);
 	free(es->INDICE[0]);
-	free(es->TIPO[0]);
 	free(es->SO);
 	free(es->s);
 	free(es->INDICE);
-	free(es->TIPO);
+	free(es->individuals);
 return;
 }
 
@@ -186,13 +175,12 @@ int ile = es->NDX + 1;
 	memset(*(es->s),0,col * ile * sizeof(int));
 	memset(*(es->INDICE),0,col * ile * sizeof(int));
 	memset((es->SO),0,col * ile * sizeof(sitio));
-	memset(*(es->TIPO),0,col * ile * sizeof(int));
-	memset(*(es->AGE),0,col * ile * sizeof(int));
 	es->ON = 0;
 	es->T = 0;
 	es->Max_Metabolic=Max_Metabolic;
 	es->Meta_T = 0.0;
 }
+
 
 void GeneraEstadoAleatorio(estado *es, float frac, int tipo)
 {
@@ -203,7 +191,6 @@ float fNDY = es->NDY;
 int col = es->NDY + 1;
 int ile = es->NDX + 1;
 int **s = es->s; 
-int **Tip = es->TIPO;
 sitio *SO = es->SO;
 int **INDICE = es->INDICE;
 long int xrand;
@@ -224,12 +211,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 		{
 			for(j=1;j<=NDY;j++)
 			{
-			s[i][j]=1;
-			Tip[i][j]=tipo;
-			(es->ON)++;
-			SO[(es->ON)].i = i;
-			SO[(es->ON)].j = j;
-			INDICE[i][j]=(es->ON);	
+			InsertaIndividuoEn(es,i,j,tipo,1);
 			}
 		}
 	}
@@ -241,13 +223,8 @@ Libres=((NDX * NDY) - (es->ON))-N;
 			i = I_JKISS(1, NDX);
 			j = I_JKISS(1, NDY);		
 			if(s[i][j]<=0){
-				s[i][j]=1;
-				Tip[i][j]=tipo;
+				InsertaIndividuoEn(es,i,j,tipo,1);
 				n++;
-				(es->ON)++;
-				SO[(es->ON)].i = i;
-				SO[(es->ON)].j = j;
-				INDICE[i][j]=(es->ON);
 			}
 		}
 	}else{
@@ -255,14 +232,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 		{
 			for(j=1;j<=NDY;j++)
 			{
-				if(s[i][j]<=0){
-				s[i][j]=1;
-				Tip[i][j]=tipo;
-				(es->ON)++;
-				SO[(es->ON)].i = i;
-				SO[(es->ON)].j = j;
-				INDICE[i][j]=(es->ON);
-				}
+				InsertaIndividuoEn(es,i,j,tipo,0);
 			}
 		}
 	}	
@@ -270,144 +240,6 @@ Libres=((NDX * NDY) - (es->ON))-N;
 return;
 }
 
-void ActualizaRyC(estado *es, int N, int campo)
-{
-float Rand; 
-float pDead, pCreacion, pCoagulation1, C, Dead, Birth, Coagulation1, Nada,pCoa2;
-sitio vecino;
-int **s = es->s;
-int NDX = es->NDX;
-int NDY = es->NDY;
-int i=es->SO[N].i;
-int j=es->SO[N].j;
-sitio *SO = es->SO;
-int radioCre;
-int radioCoa;
-int ho = (es->TIPO[i][j] * 10) - 5;	//Nicho0 cambiar cuando cambie numero de especies distinto a 50 (solo en nicho es necesario)
-	
-	Rand = F_JKISS();
-	
-	Dead=parametros[es->TIPO[i][j]].Dead; // modelo neutral y J-C
-	// rdead = ((float)(es->TIPO[i][j]-500)/5000.0)+0.05; //Modelo Lottery
-	Birth=parametros[es->TIPO[i][j]].Birth;
-//	Dead=Birth - (Birth - parametros[es->TIPO[i][j]].Dead) * exp(-pow(campo - ho,2.0)/20000.0);  // funcion nicho0 remaster
-	Coagulation1=parametros[es->TIPO[i][j]].Coagulation;	
-	pCoa2=parametros[es->TIPO[i][j]].CoagulationIntra/Max_Metabolic;
-	pDead=Dead/Max_Metabolic;	//Asignar Max_Metabolic, si no hay division entre cero.
-	pCreacion = Birth/Max_Metabolic;
-	pCoagulation1 = Coagulation1/Max_Metabolic;
-
-	if(Rand<=pDead) //aniquilacion
-	{	
-		s[i][j]=0;
-		SO[N]=SO[(es->ON)];
-		es->INDICE[SO[es->ON].i][SO[es->ON].j]=N;
-		(es->ON)--;	
-		es->TIPO[i][j]=0;
-		
-	}else{  //creation o coagulacion o nada
-		if(Rand<=(pDead + pCreacion)) //creation
-		{
-			radioCre=parametros[es->TIPO[i][j]].RadioBirth;
-			EligeUniforme(i,j,radioCre,&vecino);
-			
-			if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-			if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-			if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-			if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-			
-			if(s[vecino.i][vecino.j]<=0)
-			{
-				s[vecino.i][vecino.j]=1;
-				(es->ON)++;
-				SO[(es->ON)]=vecino;
-				es->INDICE[vecino.i][vecino.j]=(es->ON);
-				es->TIPO[vecino.i][vecino.j]=es->TIPO[i][j];
-			}
-			
-		}else{ //coagulacion1 o 2 o nada
-			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
-			{
-				radioCoa=parametros[es->TIPO[i][j]].RadioCoa;
-				 EligeUniforme(i,j,radioCoa,&vecino);
-				if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-				if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-				
-				if(s[vecino.i][vecino.j]>=1 && (es->TIPO[vecino.i][vecino.j])!=(es->TIPO[i][j]))     // mato a los que NO SON de mi propia especie 
-				{
-					s[vecino.i][vecino.j]=0;
-					SO[(es->INDICE[vecino.i][vecino.j])]=SO[(es->ON)];
-					es->INDICE[SO[es->ON].i][SO[es->ON].j]=(es->INDICE[vecino.i][vecino.j]);
-					(es->ON)--;
-					es->TIPO[vecino.i][vecino.j]=0;
-				}
-			}else{  //coagulacion 2 o nada
-				if(Rand<=(pDead + pCreacion + pCoagulation1 + pCoa2)) //coagulation Inter
-				{
-					radioCoa=parametros[es->TIPO[i][j]].RadioCoaIntra;
-					 EligeUniforme(i,j,radioCoa,&vecino);
-					if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
-					if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
-					if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-					if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-					
-					if(s[vecino.i][vecino.j]>=1 && (es->TIPO[vecino.i][vecino.j])==(es->TIPO[i][j]))     //  Solo mato a mi propia especie 
-					{
-						s[vecino.i][vecino.j]=0;
-						SO[(es->INDICE[vecino.i][vecino.j])]=SO[(es->ON)];
-						es->INDICE[SO[es->ON].i][SO[es->ON].j]=(es->INDICE[vecino.i][vecino.j]);
-						(es->ON)--;
-						es->TIPO[vecino.i][vecino.j]=0;
-					}
-				}	
-			}
-		}
-	}
-return;
-}
-
-
-void BarrMCcRyCamp(estado *es)
-{
-//	start2 = clock();  //clock comentar!!
-int Indice,i,vtipo;
-float DT=0.0;
-int campo=0;
-	
-	while(DT<1.0){
-		if((es->ON) != 0){
-		
-			 DT+=1.0/(es->ON); 
-			Indice = I_JKISS(1,(es->ON));
-			//campo = pow(250000-pow(es->SO[Indice].j - 500,2),0.5);  //nicho0 remaster campo 0:500
-				campo = 0;  //neutral y J-C y Heromyopia
-			ActualizaRyC(es,Indice,campo);	
-		}else{
-			DT=2.0;
-		}
-	}
-	
-	
-/*	for(i=1;i<=1;i++)
-	{
-		vtipo=I_JKISS(0,999);
-		 InsertaIndividuosAleatorio(es, 4, vtipo); //Valores para nicho
-		// InsertaIndividuosAleatorio(es, 40, vtipo); //Valores lottery
-		//InsertaIndividuosAleatorio(es, 4, vtipo); //Valores J-C
-		//InsertaIndividuosAleatorio(es, 2, vtipo); //valores para neutral
-	}
-*/
-(es->T)++;			
-
-//     end2 = clock();			//clock comentar!!
-  //   tiempo2 = ((double) (end2 - start2))/ CLOCKS_PER_SEC;;  //clock comentar!!	
-  //   printf("Tiempo en elejir vecinos en una corrida:%f, tiempo corrida:%f\n",cpu_time_used,tiempo2);
-   //  cpu_time_used=0.0;
-		
-return;
-}
 
 
 void EligeUniforme(int i,int j,int radio, sitio *vecino)
@@ -443,7 +275,6 @@ float fNDY = es->NDY;
 int col = es->NDY + 1;
 int ile = es->NDX + 1;
 int **s = es->s; 
-int **Tip = es->TIPO;
 sitio *SO = es->SO;
 int **INDICE = es->INDICE;
 long int xrand;
@@ -463,13 +294,8 @@ Libres=((NDX * NDY) - (es->ON))-N;
 			i = I_JKISS(1, NDX);
 			j = I_JKISS(1, NDY);		
 			if(s[i][j]<=0){
-				s[i][j]=1;
-				Tip[i][j]=tipo;
+				InsertaIndividuoEn(es,i,j,tipo,0);
 				n++;
-				(es->ON)++;
-				SO[(es->ON)].i = i;
-				SO[(es->ON)].j = j;
-				INDICE[i][j]=(es->ON);
 			}
 		}
 	}else{
@@ -477,14 +303,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 		{
 			for(j=1;j<=NDY;j++)
 			{
-				if(s[i][j]<=0){
-				s[i][j]=1;
-				Tip[i][j]=tipo;
-				(es->ON)++;
-				SO[(es->ON)].i = i;
-				SO[(es->ON)].j = j;
-				INDICE[i][j]=(es->ON);
-				}
+				InsertaIndividuoEn(es,i,j,tipo,0);
 			}
 		}
 	}	
@@ -494,41 +313,45 @@ return;
 }
 
 
-
-int CuentaEspecie(estado *es, int tipo)
-{
-	int ON=es->ON;
-	int n;
-	int total=0;
-	int **TIPO=es->TIPO;
-	
-	for(n=1;n<=ON;n++)
-	{
-		if(TIPO[es->SO[n].i][es->SO[n].j]==tipo)
-		{
-			total++;
-		}
-	}
-return total;
-}
-
-
-void InsertaIndividuoEn(estado *es,int i,int j,int tipo)
+void InsertaIndividuoEn(estado *es,int i,int j,int tipo,int encimar)
 {
 int **s = es->s; 
-int **TIPO = es->TIPO;
 sitio *SO = es->SO;
 int **INDICE = es->INDICE;
 	
-				if(s[i][j]<=0){
+				if(s[i][j]<=0 || encimar==1){
 				s[i][j]=1;
-				TIPO[i][j]=tipo;
 				(es->ON)++;
 				SO[(es->ON)].i = i;
 				SO[(es->ON)].j = j;
 				INDICE[i][j]=(es->ON);
+				es->individuals=(Individual *)realloc(es->individuals, (es->ON + 1)*sizeof(Individual));
+				es->individuals[es->ON].species=tipo;
+				es->individuals[es->ON].size=1;
+				es->individuals[es->ON].radio=1;
+				es->individuals[es->ON].metabolism=1;
 				}
 return;
+}
+
+int InsertIndividualAt(estado *es,int i,int j,Individual individual,int overWrite)
+{
+	int status=0;
+	if(es->s[i][j]<=0 || overWrite==1){
+		es->s[i][j]=1;
+		(es->ON)++;
+		es->SO[(es->ON)].i = i;
+		es->SO[(es->ON)].j = j;
+		es->INDICE[i][j]=(es->ON);
+		status = -1;
+		es->individuals=(Individual *)realloc(es->individuals, (es->ON + 1)*sizeof(Individual));
+		if(es->individuals)
+		{
+			es->individuals[es->ON]=individual;
+			status = 1;
+		}
+	}
+return status;
 }
 
 void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,Dist_MP *Dist,char Option)	
@@ -538,7 +361,6 @@ int **s = es->s;
 int NDX = es->NDX;
 int NDY = es->NDY;
 int ON = es->ON;
-int **TIPO=es->TIPO;
 sitio *SO=es->SO;
 float rho,rho_specie;
 int n, NoEspecies;
@@ -561,9 +383,9 @@ if(RhoVsT!=NULL)
 	}else{
 		for(n=1;n<=ON;n++)
 		{
-			if(NoEspecies<TIPO[SO[n].i][SO[n].j])
+			if(NoEspecies<(es->individuals[n].species))
 			{
-				NoEspecies=TIPO[SO[n].i][SO[n].j];
+				NoEspecies=es->individuals[n].species;
 			}
 		}
 	}
@@ -609,7 +431,7 @@ if(Dist!=NULL && Dist->T!=T)
 		}else{
 			for(n=1;n<=ON;n++)
 			{
-			rhoVec[TIPO[SO[n].i][SO[n].j]]++;			//Segmentation Fault si exite un tipo mas grande que el tamano de RhoVsT en j
+			rhoVec[es->individuals[n].species]++;			//Segmentation Fault si exite un tipo mas grande que el tamano de RhoVsT en j
 			}
 		}
 
@@ -827,7 +649,6 @@ float fNDY = es->NDY;
 int col = es->NDY + 1;
 int ile = es->NDX + 1;
 int **s = es->s; 
-int **Tip = es->TIPO;
 sitio *SO = es->SO;
 int **INDICE = es->INDICE;
 long int xrand;
@@ -837,7 +658,7 @@ int N, Libres;
 int i,j;
 
 
-
+Individual indv;
 
 if(tamano<=0)
 {
@@ -868,12 +689,11 @@ Libres=((NDX * NDY) - (es->ON))-N;
 			{
 				for(j=1;j<=NDY;j++)
 				{
-				s[i][j]=tamano;
-				Tip[i][j]=tipo;
-				(es->ON)++;
-				SO[(es->ON)].i = i;
-				SO[(es->ON)].j = j;
-				INDICE[i][j]=(es->ON);	
+					indv.species=tipo;
+					indv.size=tamano;
+					indv.radio=1;
+					indv.metabolism=1;
+					InsertIndividualAt(es,i,j,indv,1);
 				}
 			}
 		}else{
@@ -884,7 +704,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 					if(s[i][j]<=0)
 					{
 					s[i][j]=tamano;
-					Tip[i][j]=tipo;	
+				//	Tip[i][j]=tipo;	
 					}
 				}
 			}	
@@ -900,13 +720,12 @@ Libres=((NDX * NDY) - (es->ON))-N;
 				i = I_JKISS(1, NDX);
 				j = I_JKISS(1, NDY);		
 					if(s[i][j]<=0){
-						s[i][j]=tamano;
-						Tip[i][j]=tipo;
+						indv.species=tipo;
+						indv.size=tamano;
+						indv.radio=1;
+						indv.metabolism=1;
+						InsertIndividualAt(es,i,j,indv,1);
 						n++;
-						(es->ON)++;
-						SO[(es->ON)].i = i;
-						SO[(es->ON)].j = j;
-						INDICE[i][j]=(es->ON);
 					}
 				
 			}
@@ -917,7 +736,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 				j = I_JKISS(1, NDY);		
 					if(s[i][j]<=0){
 						s[i][j]=tamano;
-						Tip[i][j]=tipo;
+						//Tip[i][j]=tipo;
 						n++;
 					}
 			}		
@@ -930,12 +749,11 @@ Libres=((NDX * NDY) - (es->ON))-N;
 				for(j=1;j<=NDY;j++)
 				{
 					if(s[i][j]<=0){
-					s[i][j]=tamano;
-					Tip[i][j]=tipo;
-					(es->ON)++;
-					SO[(es->ON)].i = i;
-					SO[(es->ON)].j = j;
-					INDICE[i][j]=(es->ON);
+						indv.species=tipo;
+						indv.size=tamano;
+						indv.radio=1;
+						indv.metabolism=1;
+						InsertIndividualAt(es,i,j,indv,1);
 					}
 				}
 			}
@@ -946,7 +764,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 				{
 					if(s[i][j]<=0){
 					s[i][j]=tamano;
-					Tip[i][j]=tipo;
+				//	Tip[i][j]=tipo;
 					}
 				}
 			}
@@ -970,7 +788,7 @@ int j=es->SO[N].j;
 sitio *SO = es->SO;
 int radioCre;
 int radioCoa;
-int ho = (es->TIPO[i][j] * 10) - 5;	//Nicho0 cambiar cuando cambie numero de especies distinto a 50 (solo en nicho es necesario)
+int ho = (es->individuals[N].species * 10) - 5;	//Nicho0 cambiar cuando cambie numero de especies distinto a 50 (solo en nicho es necesario)
 	
 
 //float bmin=14.0;
@@ -979,9 +797,9 @@ float NMax_Metabolic;
 	Rand = F_JKISS();
 	
 	
-	Dead=parametros[es->TIPO[i][j]].Dead; // modelo neutral y J-C
+	Dead=parametros[es->individuals[N].species].Dead; // modelo neutral y J-C
 	
-	Birth=parametros[es->TIPO[i][j]].Birth;
+	Birth=parametros[es->individuals[N].species].Birth;
 	
 //	pCoa2=parametros[es->TIPO[i][j]].CoagulationIntra/Max_Metabolic;
 	pDead=Dead/es->Max_Metabolic;	//Asignar Max_Metabolic, si no hay division entre cero.
@@ -1001,16 +819,11 @@ float NMax_Metabolic;
 	
 	if(Rand<=pDead) //aniquilacion
 	{	
-		s[i][j]=0;
-		SO[N]=SO[(es->ON)];
-		es->INDICE[SO[es->ON].i][SO[es->ON].j]=N;
-		(es->ON)--;	
-		es->TIPO[i][j]=0;
-		
+		KillIndividual(es,N);	
 	}else{  //creation o coagulacion o nada
 		if(Rand<=(pDead + pCreacion)) //creation
 		{
-			radioCre=parametros[es->TIPO[i][j]].RadioBirth;
+			radioCre=parametros[es->individuals[N].species].RadioBirth;
 			EligeUniforme(i,j,radioCre,&vecino);
 			
 			if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
@@ -1018,19 +831,12 @@ float NMax_Metabolic;
 			if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
 			if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
 			
-			if(s[vecino.i][vecino.j]<=0)
-			{
-				s[vecino.i][vecino.j]=1;
-				(es->ON)++;
-				SO[(es->ON)]=vecino;
-				es->INDICE[vecino.i][vecino.j]=(es->ON);
-				es->TIPO[vecino.i][vecino.j]=es->TIPO[i][j];
-			}
+				InsertaIndividuoEn(es,vecino.i,vecino.j,es->individuals[N].species,0);
 			
 		}else{ //como o nada
 			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
 			{	
-				radioCoa=parametros[es->TIPO[i][j]].RadioCoa;
+				radioCoa=parametros[es->individuals[N].species].RadioCoa;
 				 EligeUniforme(i,j,radioCoa,&vecino);
 				if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
 				if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
@@ -1041,18 +847,13 @@ float NMax_Metabolic;
 				{
 					s[vecino.i][vecino.j]=0;			
 							s[i][j]++;			
-							NMax_Metabolic = Birth + Dead + Coagulation1 + parametros[es->TIPO[i][j]].CoagulationIntra;
+							NMax_Metabolic = Birth + Dead + Coagulation1 + parametros[es->individuals[N].species].CoagulationIntra;
 							if(es->Max_Metabolic < NMax_Metabolic)
 							{
 								es->Max_Metabolic = NMax_Metabolic;
 							}
 				}else{
-					s[vecino.i][vecino.j]=0;
-					SO[es->INDICE[vecino.i][vecino.j]]=SO[(es->ON)];
-					es->INDICE[SO[es->ON].i][SO[es->ON].j]=es->INDICE[vecino.i][vecino.j];
-					(es->ON)--;	
-					es->TIPO[vecino.i][vecino.j]=0;
-					es->AGE[vecino.i][vecino.j]=0;		
+					KillIndividual(es,es->INDICE[vecino.i][vecino.j]);	
 				}
 			}
 		}
@@ -1563,7 +1364,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 	  {
 		for ( j = 0; j < NDY; j++ )
 		{
-			if(es[n].TIPO[i+1][j+1]==TipoOrigen)
+			if(es->individuals[es->INDICE[i+1][j+1]].species==TipoOrigen)
 			{
 				in1[i*NDY + j] = (double)es[n].s[i+1][j+1];
 				on1++;
@@ -1572,7 +1373,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 			}
 			if(TipoDestino < 0)
 			{
-				if(es[n].TIPO[i+1][j+1] != (-1*TipoDestino) && es[n].TIPO[i+1][j+1] != 0)
+				if(es->individuals[es->INDICE[i+1][j+1]].species != (-1*TipoDestino) && es->individuals[es->INDICE[i+1][j+1]].species != 0)
 				{
 					in2[i*NDY + j] = (double)es[n].s[i+1][j+1];
 					on2++;
@@ -1580,7 +1381,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 					in2[i*NDY + j] = 0.0;
 				}
 			}else{	
-				if(es[n].TIPO[i+1][j+1] == TipoDestino)
+				if(es->individuals[es->INDICE[i+1][j+1]].species == TipoDestino)
 				{
 					in2[i*NDY + j] = (double)es[n].s[i+1][j+1];
 					on2++;
@@ -1707,14 +1508,14 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				{
 					if(TipoOrigen->NEG!=1) //no es el negativo
 					{
-						if(es[n].TIPO[i+1][j+1]==TipoOrigen->TIPO && es[n].s[i+1][j+1]==TipoOrigen->s)
+						if(es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoOrigen->TIPO && es[n].s[i+1][j+1]==TipoOrigen->s)
 						{
 							on0++;
 							SO[on0].i=i;
 							SO[on0].j=j;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoOrigen->TIPO && es[n].s[i+1][j+1]!=TipoOrigen->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoOrigen->TIPO && es[n].s[i+1][j+1]!=TipoOrigen->s)
 						{
 							on0++;
 							SO[on0].i=i;
@@ -1724,14 +1525,14 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				}else{  //todos los tamanos
 					if(TipoOrigen->NEG!=1) //no es el negativo
 					{
-						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]==TipoOrigen->TIPO)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoOrigen->TIPO)
 						{
 							on0++;
 							SO[on0].i=i;
 							SO[on0].j=j;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoOrigen->TIPO)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoOrigen->TIPO)
 						{
 							on0++;
 							SO[on0].i=i;
@@ -1784,7 +1585,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				{
 					if(TipoDestino->NEG!=1) //no es el negativo
 					{
-						if(es[n].TIPO[i+1][j+1]==TipoDestino->TIPO && es[n].s[i+1][j+1]==TipoDestino->s)
+						if(es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoDestino->TIPO && es[n].s[i+1][j+1]==TipoDestino->s)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1792,7 +1593,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 							in2[i*NDY + j] = 0.0;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoDestino->TIPO && es[n].s[i+1][j+1]!=TipoDestino->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoDestino->TIPO && es[n].s[i+1][j+1]!=TipoDestino->s)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1803,7 +1604,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				}else{  //todos los tamanos
 					if(TipoDestino->NEG!=1) //no es el negativo
 					{
-						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]==TipoDestino->TIPO)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoDestino->TIPO)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1811,7 +1612,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 							in2[i*NDY + j] = 0.0;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].TIPO[i+1][j+1]!=TipoDestino->TIPO)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoDestino->TIPO)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1951,6 +1752,14 @@ fftw_free(out2);
 return;
 }
 
+void KillIndividual(estado *es, int N){
+	 es->s[es->SO[N].i][es->SO[N].j]=0;
+	 es->SO[N]=es->SO[(es->ON)];
+	 es->individuals[N]=es->individuals[es->ON];
+	 es->INDICE[es->SO[N].i][es->SO[N].j]=N;
+	 (es->ON)--;	
+}
+
 void ActualizaUniv(estado *es, int N, model *modelo, Rate_log *rate)
 {
 float Rand; 
@@ -1971,102 +1780,99 @@ float NMax_Metabolic;
 	
 	Rand = F_JKISS();
 	
-	rate->TotalNo[s[i][j]]++;  //1)Comentar si no es necesario, quita eficiencia.
+	rate->TotalNo[es->individuals[N].size]++;  //1)Comentar si no es necesario, quita eficiencia.
 	
-	Dead=parametros[es->TIPO[i][j]].Dead; 
-	Birth=parametros[es->TIPO[i][j]].Birth;
-	CoagulationIntra=parametros[es->TIPO[i][j]].CoagulationIntra;
+	Dead=parametros[es->individuals[N].species].Dead; 
+	Birth=parametros[es->individuals[N].species].Birth;
+	CoagulationIntra=parametros[es->individuals[N].species].CoagulationIntra;
 
-	if(s[i][j]<=20)
-	{
+//Funcion k(s,r,m):
+	//if(s[i][j]<=20)
+	//{
 	Coagulation1 = (float)s[i][j];
-	}else{
-		Coagulation1 = 0.5*(float)(s[i][j]-20) + 20.0;
-	}
-	
+	//}else{
+	//	Coagulation1 = 0.5*(float)(s[i][j]-20) + 20.0;
+	//}
+//
 	pCreacion = Birth/es->Max_Metabolic;
 	pDead=Dead/es->Max_Metabolic;
 	pCoagulation1 = Coagulation1/es->Max_Metabolic;
 	
 	if(Rand<=pDead) //aniquilacion
 	{	
-		s[i][j]=0;
-		SO[N]=SO[(es->ON)];
-		es->INDICE[SO[es->ON].i][SO[es->ON].j]=N;
-		(es->ON)--;	
-		es->TIPO[i][j]=0;
-		
+		KillIndividual(es, N);
 	}else{  //creation o coagulacion o nada
 		if(Rand<=(pDead + pCreacion)) //creation
 		{
-			radioCre=parametros[es->TIPO[i][j]].RadioBirth;
+			radioCre=parametros[es->individuals[N].species].RadioBirth;
 			EligeUniforme(i,j,radioCre,&vecino);
 			
 			if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
 			if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
 			if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
-			if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
+			if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya	
 			
-			if(s[vecino.i][vecino.j]<=0)
-			{
-				s[vecino.i][vecino.j]=1;
-				(es->ON)++;
-				SO[(es->ON)]=vecino;
-				es->INDICE[vecino.i][vecino.j]=(es->ON);
-				es->TIPO[vecino.i][vecino.j]=es->TIPO[i][j];
-			}
-			
+				Individual indiv;
+				indiv.size=1;
+				indiv.species=es->individuals[N].species;
+				indiv.radio=1;
+				indiv.metabolism=1;
+				
+				InsertIndividualAt(es,vecino.i,vecino.j,indiv,0);
+					
 		}else{ //como o nada
 			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
 			{	
-				radioCoa=parametros[es->TIPO[i][j]].RadioCoa;
+			
+				//radioCoa=es->individuals[N].radio;
+				radioCoa=0.5*es->individuals[N].size;	//ratio between radio and size of individual
 				 EligeUniforme(i,j,radioCoa,&vecino);
 				if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
 				if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
 				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
 				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
 				
+			////// funcion dot{m}(s,r,m)
 				//pMetabolic=(modelo->MetFact*pow((float)(s[i][j]),modelo->MetExp))/es->Max_Metabolic;
 				//if(s[i][j]>20)
 				//{
 					//pMetabolic=1.5*(float)s[i][j]/es->Max_Metabolic;
 				//}else{
 					pMetabolic=0.5*(float)s[i][j]/es->Max_Metabolic;
-				//}
-				
-				
+				//}				
+			/////	
 				if(Rand<=(pDead + pCreacion + pMetabolic))  //Cuento las necesidades metabolicas.
 				{
-					es->AGE[i][j]++;
+					es->individuals[N].metabolism++;
 				}
 				
 				if(s[vecino.i][vecino.j]<0)  //Si hay comida, como. 
 				{
 					s[vecino.i][vecino.j]=0;
-						if(es->AGE[i][j]<0)		//Si he llenado las necesidades de metabolizmo crezco
+						if(es->individuals[N].metabolism<0)		//Si he llenado las necesidades de metabolizmo crezco
 						{
-							rate->GrowthNo[s[i][j]]++;    //1)Comentar si no es necesario, quita eficiencia.
-							s[i][j]++;
-							es->AGE[i][j]=0;
-							
-						
+							rate->GrowthNo[es->individuals[N].size]++;    //1)Comentar si no es necesario, quita eficiencia.
+							es->individuals[N].metabolism=0;
+							////cr =resources needed per radio increment(rate between s and r increments);
+						//	Rand2 = F_JKISS();	//if proportions are constant we could avoid this
+					//		if(Rand2<=1.0/(1.0+cr))		// taking care in tuning coagulation radio right(above).
+							es->individuals[N].size++;
+					//		else{
+					//		es->individuals[N].radio++;
+					//		}
+						////////
 							NMax_Metabolic = Birth + Dead + Coagulation1 + CoagulationIntra;
 							if(es->Max_Metabolic < NMax_Metabolic)
 							{
 								es->Max_Metabolic = NMax_Metabolic;
 							}				
 						}else{			//Si no he llenado necesidades de metabolizmo, como para ir llenando necesidades de metabolizmo.
-							es->AGE[i][j]--;
+							es->individuals[N].metabolism--;
 						}
 				}else{ //Si no hay comida, checo si corresponde morir.
-					if(((modelo->ResurcesFact)*s[i][j]-es->AGE[i][j])<0) //Las reservas para satisfacer el metabolizmo, se proponen proporcionales al tamano. Si se acaban las reservas, muero.
+					if(((modelo->ResurcesFact)-es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
 					{
-						s[i][j]=0;
-						SO[N]=SO[(es->ON)];
-						es->INDICE[SO[es->ON].i][SO[es->ON].j]=N;
-						(es->ON)--;	
-						es->TIPO[i][j]=0;
-						es->AGE[i][j]=0;
+						KillIndividual(es,N);
 					}
 				}
 			}

@@ -14,7 +14,6 @@ Copyright 2012 Jorge Velazquez
 void GuardaEstado(estado *es, FILE *archivo)
 {
 int **s=es->s;
-int **TIPO=es->TIPO;
 int NDX = es->NDX;
 int NDY = es->NDY;
 int i,j;
@@ -25,7 +24,7 @@ int i,j;
 		for(j=1;j<=NDY;j++)
 		{
 			if(s[i][j]!=0){ 
-				fprintf(archivo,"%d %d %d %d\n",i,j,TIPO[i][j],s[i][j]); 
+				fprintf(archivo,"%d %d %d %d\n",i,j,es->individuals[es->INDICE[i][j]].species,s[i][j]); 
 				}
 			//else{fprintf(archivo,"No hay datos para: %d   %d \n",i,j);}
 		}
@@ -77,7 +76,6 @@ int T=es->T;
 int NDX = es->NDX;
 int NDY = es->NDY;
 int ON = es->ON;
-int **TIPO=es->TIPO;
 sitio *SO=es->SO;
 float rho,rho_specie;
 int tot=(NoEspecies+1);
@@ -93,7 +91,7 @@ fprintf(archivo,"%d   %f   0\n",T,rho); // Tipo 0 es el total
 	int n;
 		for(n=1;n<=ON;n++)
 		{
-			rhoVec[TIPO[SO[n].i][SO[n].j]]+=1;
+			rhoVec[es->individuals[n].species]+=1;
 			//rhoVec[s[SO[n].i][SO[n].j]]+=1;
 		}
 
@@ -120,7 +118,6 @@ int NDX = es->NDX;
 int NDY = es->NDY;
 int ON = es->ON;
 int **s=es->s;
-int **TIPO=es->TIPO;
 int i,j;
 int tot=NDX*NDY;
 int rho[tot];  // CUIDADO!: NO PUEDE HABER ETIQUETAS DE ESPECIES MAS GRANDES QUE EL NUMERO DE SITIOS EN LA RED !!!! SEGMENTATION FAULT!!!! 
@@ -139,7 +136,7 @@ strcat(archivo,paso);
 			for(j=1;j<=NDY;j++)
 			{
 				if(s[i][j]!=0){ 
-				rho[TIPO[i][j]]+=1;
+				rho[es->individuals[es->INDICE[i][j]].species]+=1;
 				 }
 			}
 		}
@@ -303,7 +300,7 @@ puts(archivo);
 	AlojaMemoria(es,max_i,max_j);
 	ResetEstado(es);
 	s=es->s;
-	TIPO=es->TIPO;
+	
 	SO=es->SO;
 	INDICE=es->INDICE;
 	
@@ -314,25 +311,13 @@ puts(archivo);
     {
       args_assigned = sscanf (buffer, "%d %d %d", &i, &j, &t);
       if(args_assigned == 3)
-      {
-		  n++;
-		s[i][j]=1;
-		TIPO[i][j]=t;
-		SO[n].i=i;
-		SO[n].j=j;
-		INDICE[i][j]=n;
-		(es->ON)++;  
+      { 
+		InsertaIndividuoEn(es,i,j,t,1);
 	  }else{
 		  if(args_assigned == 2)
 		  {
-			   n++;
-			s[i][j]=1;
-			TIPO[i][j]=0;
-			SO[n].i=i;
-			SO[n].j=j;
-			INDICE[i][j]=n;
-			(es->ON)++;  
-		}
+			 InsertaIndividuoEn(es,i,j,0,1);
+		  }
 	  }  
     }
     
