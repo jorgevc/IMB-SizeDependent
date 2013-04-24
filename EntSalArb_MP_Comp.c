@@ -5,11 +5,9 @@ Copyright 2012 Jorge Velazquez
 #include <string.h>
 #include <sys/stat.h>
 #include <stdlib.h>
-//#include "libPP_3.0.h"
-//#include "libPP_4.0.h"
-//#include "libPP_5.0.h"
 #include "libPP_6.1.h"
 #include "EntSalArb_MP_Comp.h"
+#include <errno.h>
 
 void GuardaEstado(estado *es, FILE *archivo)
 {
@@ -23,8 +21,8 @@ int i,j;
 	{
 		for(j=1;j<=NDY;j++)
 		{
-			if(s[i][j]!=0){ 
-				fprintf(archivo,"%d %d %d %d\n",i,j,es->individuals[es->INDICE[i][j]].species,s[i][j]); 
+			if(s[i][j]>0){ 
+				fprintf(archivo,"%d %d %d %d\n",i,j,es->individuals[es->INDICE[i][j]].species,es->individuals[es->INDICE[i][j]].size); 
 				}
 			//else{fprintf(archivo,"No hay datos para: %d   %d \n",i,j);}
 		}
@@ -32,12 +30,58 @@ int i,j;
 }
 
 
-void CreaContenedor(char *nombre)
+void CreaContenedor(char *nombre,runDescriptor run)
 {
+	fprintf(stdout,"\nCreando contenedor: %s",nombre);
+	
+char copyFileName[550];
+char dir[550];
+char *pch;
+FILE *file;
 
-mkdir(nombre,(S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH));
+strcpy(dir,"");
+	strcpy(copyFileName,nombre);
+	pch = strtok (copyFileName,"/");
+	while(pch != NULL)
+	{	
+		strcat (dir,pch);
+		 strcat (dir,"/");
+		if(mkdir(dir,(S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) != 0)
+		 {
+			 fprintf(stdout,"\ndir: %s, ",dir);
+			 perror("Error creando directorio: ");
+		 }
+		 pch = strtok (NULL, "/");
+	}
 
-fprintf(stdout,"Contenedor creado:\n %s \n",nombre);
+strcpy(copyFileName,nombre);
+strcat(copyFileName,"/descriptor");
+file=fopen(copyFileName,"w");
+
+fprintf(file,"X=%d\n",run.X);
+fprintf(file,"Y=%d\n",run.Y);
+fprintf(file,"units=%f  (Area_units=units^2)\n",run.units);
+fprintf(file,"T_max=%d\n",run.T_max);
+fprintf(file,"NoEnsambles=%d\n", run.NoEnsambles);
+
+fprintf(file,"\ncoagulation_exp=%f\n", run.Model.coagulation_exp);
+fprintf(file,"coagulation_factor=%f  (Area_units/(Area_units)^c_exp)*factor\n", run.Model.coagulation_factor);
+
+fprintf(file,"\ncoagulation_radio_exp=%f\n", run.Model.coagulation_radio_exp);
+fprintf(file,"coagulation_radio_factor=%f  (units/(Area_units)^cr_exp)*factor\n", run.Model.coagulation_radio_factor);
+
+fprintf(file,"\ncoagulation_metabolic_exp=%f\n", run.Model.metabolic_exp);
+fprintf(file,"metabolic_factor=%f  (Area_units/(Area_units)^m_exp)*factor\n", run.Model.metabolic_factor);
+
+fprintf(file,"\nhealth_factor=%f\n", run.Model.health_factor);
+fprintf(file,"\nmin_health=%d\n", run.Model.min_health);
+
+fprintf(file,"\nresource_rate=%f\n", run.resource_rate);
+fclose(file);
+	
+fprintf(stdout,"\nlisto creando contenedor!\n");
+
+
 return;
 }
 
@@ -356,8 +400,7 @@ if(RhoVsT!=NULL)
 		{
 				fprintf(datos,"%d %f %d\n",T,RhoVsT->array[T][e]/NoEnsambles,e);
 				//printf("guadando:%d %f %d NoEnsambles=%d \n",T,RhoVsT->array[T][e]/NoEnsambles,e, RhoVsT->NoEnsambles);
-		}
-		
+		}	
 	}
 	fclose(datos);
 }
@@ -532,16 +575,18 @@ void GuardaFloat1D_MP(char *contenedor,char *nombre, Float1D_MP *MP_Float1D)
 	FILE *Arch;
 	int i;
 	int NDX = MP_Float1D->i_max;
+	float delta_s=1.0/MP_Float1D->index_units;
 	char nombreCom[150];
 	
-		printf("Guardando .. \n");
+		printf("Guardando .. ");
 		sprintf(nombreCom,"%s/%s",contenedor,nombre);
+		printf("\nen %s",nombreCom);
 		Arch = fopen(nombreCom,"w");
 		for(i=0;i<=NDX;i++)
 		{
 				if(MP_Float1D->array[i]!=0.0)
 				{
-					fprintf(Arch,"%d %f\n",i,MP_Float1D->array[i]/((float)MP_Float1D->NoEnsambles));
+					fprintf(Arch,"%f %f\n",((float)i)*delta_s,MP_Float1D->array[i]/((float)MP_Float1D->NoEnsambles));
 				}
 		}
 		fclose(Arch);

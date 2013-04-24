@@ -26,6 +26,7 @@ int species;
 int size;
 int radio;
 int metabolism;
+int health;
 } Individual;
 
 /** Contains the state of the system(lattice). */
@@ -43,7 +44,11 @@ sitio *SO;			/**< A 1 dimensional array of scructs sitio that is a list of the o
 						To find the index of an specific occupied site at (i,j) in this list, one have to look for it in INDICE[i][j]. */
 float Meta_T;
 float Max_Metabolic;
+float units;
 Individual *individuals;
+int control;
+int control2;
+
 } estado;
 
 /** General porpuse 2 dimensinal array of float suitable to be used for ensemble averages. */
@@ -63,6 +68,7 @@ int i_max;			/**< The maximun value of i. It is equal to (array_size + 1) */
 int T;				/**< Used to store the time-step of the property that is stored in the instance(if aplicable). */
 int NoEnsambles;	/**< The number of ensambles that are stored in the instance. This number is generally used to obtain the mean in a
 						multi-thread program, or simplie the ensemble average. */
+float index_units;
 } Float1D_MP;
 
 /** General porpuse 1 dimensinal array of float suitable to be used for ensemble averages. */
@@ -94,11 +100,19 @@ int on;
 } Grupo;
 
 typedef struct {
-float CoaFact;
-float CoaExp;
-float MetFact;
-float MetExp;
-float ResurcesFact;	
+float dead_rate;
+float birth_rate;
+float intra_coagulation;
+float coagulation_factor;
+float coagulation_exp;
+float metabolic_factor;
+float coagulation_radio_exp;
+float coagulation_radio_factor;
+float metabolic_exp;
+float health_factor;
+int min_health;
+int growth_constant;
+float (*coagulationFuntion)(Individual *);
 } model;
 
 typedef struct {
@@ -116,6 +130,15 @@ int i_max;
 int *NoEnsambles;
 } Rate_log;
 
+typedef struct {
+	int X;
+	int Y;
+	int NoEnsambles;
+	float units;
+	int T_max;
+	float resource_rate;
+	model Model;
+} runDescriptor;
 
 extern Grupo GRUPO_INI;
 
@@ -179,6 +202,11 @@ void SetRadioCoaIntra(int rc, int tipo);
  * */
 void EscalaTiempoMetabolico(int tipo);
 
+/** Escale the metabolic time scale based in the model given and sizes of individuals in *es.
+ * It overwrithes any other value of es->Max_Metabolic
+ * */
+void setMaxMetabolic(estado *es, model *modelo);
+
 /** allocate the necesary memory for a lattice (system). 
  * @param[out] *es pointer to the lattice (system)
  * @param NDX the size of one side of the lattice: i=X coordinate 
@@ -191,13 +219,6 @@ void AlojaMemoria(estado *es, int NDX, int NDY);
  * @param *es pointer to the lattice (system).
  * */
 void ResetEstado(estado *es);
-
-/** Writtes to a <estado> a uniform random state of occupied sites of a species. 
- * @param *es lattice (system) where the random state will be "written".
- * @param[in] frac the fraction of the lattice that will be occupied for the generated random state.
- * @param[in] tipo the specie of the generated random state.
- * */
-void GeneraEstadoAleatorio(estado *es, float frac, int tipo);
 
 
 /**
@@ -258,13 +279,11 @@ void AlojaMemoriaEspecie(int tipo);
  * @param *RhoVsT The density of each specie is stored in <RhoVsT>[T][i] where T is the Time-steep taken from <es> and i is the species. 
  * This function does not change any other values of <Float2D_MP>, so it can be used each time steep to store the evolution of the densities.
  * This parameter can be NULL, if just the distribution is needed.
- * @param *RhoDist The distribution of densities is stored in <RhoDist> and assigned the Time-steep of <es>. This parameter can be NULL, 
- * if just the densities are needed.
  * @param Option If 's' is given as an option the distribution of sizes is going to be calculated, any other option calculate the distribution of species types.
  * @see Float2D_MP
  * @see Dist_MP
  */
-void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,Dist_MP *RhoDist, char Option);
+void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT, char Option);
 
 /**
  * Allocates the necesary memory for a <Float2D_MP>.
@@ -291,7 +310,7 @@ void ActualizaRyCTamano(estado *es, int N, int campo);
 void BarrMCcRyCampTamano(estado *es, float flujo_recursos, model *param, Rate_log *rate);
 void ActualizaDistTamano_MP(estado *e, Float1D_MP *TamDist, char Opcion);
 void ActualizaRecursos_MP(estado *es,Float2D_MP *RhoVsT);
-void ActualizaUniv(estado *es, int N, model *modelo, Rate_log *rate);
+void ActualizaUniv(estado *es, int N, model *modelo);
 
 /** Calculates the likelyhood of Origin with Experiment 
  * 
@@ -345,6 +364,8 @@ void InicializaDist_MP(Dist_MP *Objeto, float TamParticion, float xIni, float xF
  * @see SetSpecie2
  */
 void SetSpecie(int NoEspecie, float Birth, float Coagulation, float Dead, float RadioBirth, float RadioCoa);
+
+void ReallocRate_log(Rate_log *rate, int add_size);
 
 /**
  * Resets to 0 the values of a <Float2D_MP> object.

@@ -10,7 +10,7 @@ Copyright 2012 Jorge Velazquez
 #include "GNA.h"
 #include "libPP_6.1.h"
 
-
+#include "model.c"
 
 especie *parametros=NULL;
 static float Max_Metabolic=0.0;
@@ -154,6 +154,7 @@ ile = NDX + 1;
 	es->ON = 0;
 	es->Max_Metabolic=Max_Metabolic;
 	es->Meta_T = 0.0;
+	es->individuals=NULL;
 return;
 }
 
@@ -182,69 +183,11 @@ int ile = es->NDX + 1;
 }
 
 
-void GeneraEstadoAleatorio(estado *es, float frac, int tipo)
-{
-int NDX = es->NDX;
-int NDY = es->NDY;
-float fNDX = es->NDX;
-float fNDY = es->NDY;
-int col = es->NDY + 1;
-int ile = es->NDX + 1;
-int **s = es->s; 
-sitio *SO = es->SO;
-int **INDICE = es->INDICE;
-long int xrand;
-long int yrand;
-int n=0;
-int N, Libres;
-int i,j;
-
-
-N = (int)((fNDX * fNDY) * frac);
-
-Libres=((NDX * NDY) - (es->ON))-N;
-	
-	if(frac==1.0)
-	{
-		(es->ON)=0;
-		for(i=1;i<=NDX;i++)
-		{
-			for(j=1;j<=NDY;j++)
-			{
-			InsertaIndividuoEn(es,i,j,tipo,1);
-			}
-		}
-	}
-	
-	if(Libres>1)
-	{
-		while(n<N)
-		{ 
-			i = I_JKISS(1, NDX);
-			j = I_JKISS(1, NDY);		
-			if(s[i][j]<=0){
-				InsertaIndividuoEn(es,i,j,tipo,1);
-				n++;
-			}
-		}
-	}else{
-		for(i=1;i<=NDX;i++)
-		{
-			for(j=1;j<=NDY;j++)
-			{
-				InsertaIndividuoEn(es,i,j,tipo,0);
-			}
-		}
-	}	
-	
-return;
-}
-
 
 
 void EligeUniforme(int i,int j,int radio, sitio *vecino)
 {
-	start = clock();  //clock comentar!!
+	//start = clock();  //clock comentar!!
 
 	int x,y,R2;
 	int diam = 2 * radio;
@@ -260,8 +203,8 @@ void EligeUniforme(int i,int j,int radio, sitio *vecino)
 		vecino->i = i + x;
 		vecino->j = j + y;
 		
-	 end = clock();			//clock comentar!!
-     cpu_time_used += ((double) (end - start))/ CLOCKS_PER_SEC;;  //clock comentar!!
+//	 end = clock();			//clock comentar!!
+  //   cpu_time_used += ((double) (end - start))/ CLOCKS_PER_SEC;;  //clock comentar!!
 	 
 return; 	
 }
@@ -330,7 +273,9 @@ int **INDICE = es->INDICE;
 				es->individuals[es->ON].size=1;
 				es->individuals[es->ON].radio=1;
 				es->individuals[es->ON].metabolism=1;
+				es->individuals[es->ON].health=0;
 				}
+				printf("\nWARNING!! -> InsertaIndividuoEn is deprecated!!\n");
 return;
 }
 
@@ -354,7 +299,7 @@ int InsertIndividualAt(estado *es,int i,int j,Individual individual,int overWrit
 return status;
 }
 
-void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,Dist_MP *Dist,char Option)	
+void ActualizaRhoVsT_MP(estado *es,Float2D_MP *RhoVsT,char Option)	
 {
 int T=es->T;
 int **s = es->s;
@@ -375,9 +320,9 @@ if(RhoVsT!=NULL)
 	{
 		for(n=1;n<=ON;n++)
 		{		
-			if(NoEspecies<s[SO[n].i][SO[n].j])
+			if(NoEspecies<(es->individuals[n].size))
 			{
-				NoEspecies=s[SO[n].i][SO[n].j];
+				NoEspecies=es->individuals[n].size;
 			}		
 		}
 	}else{
@@ -399,21 +344,10 @@ int NoPart;
 
 rho=((float)ON)/((float)(NDX*NDY));
 
-if(RhoVsT!=NULL)
-{
 #pragma omp atomic
 RhoVsT->array[T][0]+=rho;	// Tipo 0 es el total
-}
 
-if(Dist!=NULL && Dist->T!=T)
-{
-	#pragma omp critical
-	{
-		memset(Dist->array,0, Dist->i_max * sizeof(int));
-		Dist->T=T;
-		Dist->NoEnsambles=0;
-	}
-}
+
 
 	if(NoEspecies!=0)
 	{
@@ -421,9 +355,9 @@ if(Dist!=NULL && Dist->T!=T)
 		{
 			for(n=1;n<=ON;n++)
 			{
-				if(s[SO[n].i][SO[n].j]<NoEspecies)
+				if((es->individuals[n].size)<NoEspecies)
 				{
-					rhoVec[s[SO[n].i][SO[n].j]]++;
+					rhoVec[es->individuals[n].size]++;
 				}else{
 					//printf("Hubo tamanos que no se registraron en RhoVsT: %d\n",s[SO[n].i][SO[n].j]);
 				}
@@ -439,25 +373,10 @@ if(Dist!=NULL && Dist->T!=T)
 		{
 				if(rhoVec[n]!=0)
 				{
-					rho_specie=((float)rhoVec[n])/((float)(NDX*NDY));
-					if(RhoVsT!=NULL)
-					{
+					rho_specie=((float)rhoVec[n])/((float)(NDX*NDY));			
 						#pragma omp atomic
 						RhoVsT->array[T][n]+=rho_specie;
-					}
-					
-					if(Dist!=NULL)
-					{
-							NoPart=(int)(rho_specie/Dist->TamParticion);
-							#pragma omp atomic
-							Dist->array[NoPart]++;
-					}
 				}
-		}
-		if(Dist!=NULL)
-		{
-			#pragma omp atomic
-			Dist->NoEnsambles++;
 		}
 	}
 	
@@ -564,7 +483,7 @@ void ResetFloat1D_MP(Float1D_MP *ARRAY)
 		}
 		ARRAY->NoEnsambles=0;
 		ARRAY->T=0;
-		
+		ARRAY->index_units=1.0;
 return;
 }
 
@@ -642,7 +561,7 @@ return;
 
 void GeneraEstadoAleatorioTamano(estado *es, float frac, int tipo, int tamano)
 {
-	int NDX = es->NDX;
+int NDX = es->NDX;
 int NDY = es->NDY;
 float fNDX = es->NDX;
 float fNDY = es->NDY;
@@ -653,123 +572,91 @@ sitio *SO = es->SO;
 int **INDICE = es->INDICE;
 long int xrand;
 long int yrand;
-int n=0;
+int control=0;
+
 int N, Libres;
 int i,j;
-
+float Rand;
 
 Individual indv;
 
 if(tamano<=0)
 {
-	for(i=1;i<=NDX;i++)
-	{
-		for(j=1;j<=NDY;j++)
-		{
-			if(s[i][j]<0)
-			{
-				s[i][j]=0;
-			}
-		}
-	}
 	
-N = (int)((float)((NDX * NDY) - (es->ON)) * frac );	
+N = (int)(((float)((NDX * NDY) - (es->ON))) * frac );	
 Libres=((NDX * NDY) - (es->ON))-N;
+
 }else{
 	N = (int)((fNDX * fNDY) * frac);
 	Libres=((NDX * NDY) - (es->ON))-N;	
 }
 	
-	if(frac==1.0)
-	{
-		if(tamano>=1)
+		if(Libres>1)
 		{
-			(es->ON)=0;
-			for(i=1;i<=NDX;i++)
+			if(tamano>0)
 			{
-				for(j=1;j<=NDY;j++)
+				for(i=1;i<=NDX;i++)
 				{
-					indv.species=tipo;
-					indv.size=tamano;
-					indv.radio=1;
-					indv.metabolism=1;
-					InsertIndividualAt(es,i,j,indv,1);
-				}
-			}
-		}else{
-			for(i=1;i<=NDX;i++)
-			{
-				for(j=1;j<=NDY;j++)
+					for(j=1;j<=NDY;j++)
+					{		
+						if(s[i][j]<=0){
+							Rand = F_JKISS();
+							if(Rand<=frac)
+							{				
+								indv.species=tipo;
+								indv.size=tamano;
+								indv.radio=1;
+								indv.metabolism=1;
+								InsertIndividualAt(es,i,j,indv,1);
+							}
+						}
+					}
+				 }
+			}else{
+				for(i=1;i<=NDX;i++)
 				{
-					if(s[i][j]<=0)
+					for(j=1;j<=NDY;j++)
 					{
-					s[i][j]=tamano;
-				//	Tip[i][j]=tipo;	
+						if(s[i][j]<=0){
+							s[i][j]=0;
+							Rand = F_JKISS();
+							if(Rand<=frac)
+							{
+								s[i][j]=tamano;
+							}
+						}
 					}
 				}
-			}	
-		}
-	}
-	
-	if(Libres>1)
-	{
-		if(tamano>0)
-		{
-			while(n<N)
-			{ 
-				i = I_JKISS(1, NDX);
-				j = I_JKISS(1, NDY);		
-					if(s[i][j]<=0){
-						indv.species=tipo;
-						indv.size=tamano;
-						indv.radio=1;
-						indv.metabolism=1;
-						InsertIndividualAt(es,i,j,indv,1);
-						n++;
-					}
-				
 			}
 		}else{
-			while(n<N)
-			{ 
-				i = I_JKISS(1, NDX);
-				j = I_JKISS(1, NDY);		
-					if(s[i][j]<=0){
+			if(tamano>0)
+			{
+				for(i=1;i<=NDX;i++)
+				{
+					for(j=1;j<=NDY;j++)
+					{
+						if(s[i][j]<=0){
+							indv.species=tipo;
+							indv.size=tamano;
+							indv.radio=1;
+							indv.metabolism=1;
+							InsertIndividualAt(es,i,j,indv,1);
+						}
+					}
+				}
+			}else{
+				for(i=1;i<=NDX;i++)
+				{
+					for(j=1;j<=NDY;j++)
+					{
+						if(s[i][j]<=0){
 						s[i][j]=tamano;
-						//Tip[i][j]=tipo;
-						n++;
-					}
-			}		
-		}
-	}else{
-		if(tamano>0)
-		{
-			for(i=1;i<=NDX;i++)
-			{
-				for(j=1;j<=NDY;j++)
-				{
-					if(s[i][j]<=0){
-						indv.species=tipo;
-						indv.size=tamano;
-						indv.radio=1;
-						indv.metabolism=1;
-						InsertIndividualAt(es,i,j,indv,1);
-					}
-				}
-			}
-		}else{
-			for(i=1;i<=NDX;i++)
-			{
-				for(j=1;j<=NDY;j++)
-				{
-					if(s[i][j]<=0){
-					s[i][j]=tamano;
-				//	Tip[i][j]=tipo;
+						}
 					}
 				}
 			}
 		}
-	}	
+		
 	
 	
 return;
@@ -866,7 +753,7 @@ return;
 
 void BarrMCcRyCampTamano(estado *es,float flujo_recursos, model *param, Rate_log *rate)
 {
-int Indice,i,vtipo;
+int Indice,vtipo;
 float DT=0.0;
 float TMetabolicIni=es->Meta_T;
 float LMax_Metabolic=es->Max_Metabolic;
@@ -874,14 +761,20 @@ float TEnteroAnterior;
 float TMetabolicActual;
 
 //////////// rate internals
-int GrNo[rate->i_max];
-int TN[rate->i_max];
+int size;
+int on;
+sitio place;
 
-rate->GrowthNo=GrNo;
-rate->TotalNo=TN;
-
-	memset(rate->GrowthNo,0,rate->i_max * sizeof(int)); 
-	memset(rate->TotalNo,0,rate->i_max * sizeof(int)); 
+	memset(rate[0].GrowthNo,0,rate[0].i_max * sizeof(int)); 
+	memset(rate[0].TotalNo,0,rate[0].i_max * sizeof(int)); 
+	memset(rate[1].GrowthNo,0,rate[1].i_max * sizeof(int)); 
+	memset(rate[1].TotalNo,0,rate[1].i_max * sizeof(int)); 
+	memset(rate[2].GrowthNo,0,rate[2].i_max * sizeof(int)); 
+	memset(rate[2].TotalNo,0,rate[2].i_max * sizeof(int));
+	memset(rate[3].GrowthNo,0,rate[3].i_max * sizeof(int)); 
+	memset(rate[3].TotalNo,0,rate[3].i_max * sizeof(int));
+	memset(rate[4].GrowthNo,0,rate[4].i_max * sizeof(int)); 
+	memset(rate[4].TotalNo,0,rate[4].i_max * sizeof(int));
 ////////// END rate internals
 
 	TEnteroAnterior = floor(es->Meta_T);
@@ -889,8 +782,8 @@ rate->TotalNo=TN;
 	while(DT<1.0 && es->ON>0){
 			TMetabolicActual= TMetabolicIni + DT/LMax_Metabolic;
 			if(TMetabolicActual - TEnteroAnterior >=1.0)
-			{
-				GeneraEstadoAleatorioTamano(es, flujo_recursos, -1, -1);
+			{				
+				GeneraEstadoAleatorioTamano(es, flujo_recursos, -1, -1);			
 				TEnteroAnterior += 1.0;
 			}
 			 DT+=1.0/(es->ON); 
@@ -901,23 +794,120 @@ rate->TotalNo=TN;
 			//printf("llega DT:%f\n",DT);
 				//}
 			//}
-			ActualizaUniv(es, Indice, param, rate);
-			//ActualizaRyCTamano(es, Indice, 0);
+			size=es->individuals[Indice].size;
+			on=es->ON;
+			es->control=0;
+			es->control2=0;
+			if(size==rate[0].i_max)
+			{
+				ReallocRate_log(&rate[0], 50);
+				ReallocRate_log(&rate[1], 50);
+				ReallocRate_log(&rate[2], 50);
+				ReallocRate_log(&rate[3], 50);
+				ReallocRate_log(&rate[4], 50);
+			}
+				
+			place=es->SO[Indice];	
+			rate[0].TotalNo[size]++;
+			rate[1].TotalNo[size]++;	
+			rate[2].TotalNo[size]++;
+			rate[3].TotalNo[size]++;
+			rate[4].TotalNo[size]++;
+				ActualizaUniv(es, Indice, param);
+			if(es->ON==(on-1)){
+				rate[1].GrowthNo[size]++;
+			}else{
+				if(es->control==1)
+				{
+					rate[2].GrowthNo[size]++;
+					if((size+1)==es->individuals[Indice].size)
+					{		
+						rate[0].GrowthNo[size]++;
+					}else{
+						rate[3].GrowthNo[size]++;
+					}
+				}			
+			}
+			
+			if(es->control2==1)
+			{
+				rate[4].GrowthNo[size]++;
+			}								
 	}
 	
-int size;
-	for(size=1;size<=rate->i_max;size++)
+
+	for(size=1;size<=rate[0].i_max;size++)
 	{
-		if(rate->TotalNo[size]>0)
+		if(rate[0].TotalNo[size]>0)
 		{
-			rate->Growth[size]+=(float)rate->GrowthNo[size]/(float)rate->TotalNo[size];
-			rate->NoEnsambles[size]++;
+			rate[0].Growth[size]+=((float)rate[0].GrowthNo[size]/(float)rate[0].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[0].NoEnsambles[size]++;
 		}
+		if(rate[1].TotalNo[size]>0)
+		{
+			rate[1].Growth[size]+=((float)rate[1].GrowthNo[size]/(float)rate[1].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[1].NoEnsambles[size]++;
+		}
+		if(rate[2].TotalNo[size]>0)
+		{
+			rate[2].Growth[size]+=((float)rate[2].GrowthNo[size]/(float)rate[2].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[2].NoEnsambles[size]++;
+		}
+		if(rate[3].TotalNo[size]>0)
+		{
+			rate[3].Growth[size]+=((float)rate[3].GrowthNo[size]/(float)rate[3].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[3].NoEnsambles[size]++;
+		}		
+		if(rate[4].TotalNo[size]>0)
+		{
+			rate[4].Growth[size]+=((float)rate[4].GrowthNo[size]/(float)rate[4].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[4].NoEnsambles[size]++;
+		}	
 	}
 
 (es->T)++;
 es->Meta_T=TMetabolicActual;
 
+return;
+}
+
+void ReallocRate_log(Rate_log *rate, int add_size){
+	int *tmp;
+	float *tmpf;
+	int i;
+	tmp=(int *)realloc(rate->GrowthNo, (rate->i_max + add_size +1)*sizeof(int));
+					if(tmp!=NULL)
+					{
+						rate->GrowthNo=tmp;
+					}
+
+					tmp=(int *)realloc(rate->TotalNo, (rate->i_max + add_size +1)*sizeof(int));
+					if(tmp!=NULL)
+					{
+						rate->TotalNo=tmp;
+					}	
+					
+					tmpf=(float *)realloc(rate->Growth, (rate->i_max + add_size +1)*sizeof(float));
+					if(tmp!=NULL)
+					{
+						rate->Growth=tmpf;
+					}
+					
+					tmp=(int *)realloc(rate->NoEnsambles, (rate->i_max + add_size + 1)*sizeof(int));
+					if(tmp!=NULL)
+					{
+						rate->NoEnsambles=tmp;
+					}	
+										
+					for(i=(rate->i_max+1);i<=(rate->i_max + add_size);i++)
+						{
+							rate->GrowthNo[i]=0;
+							rate->TotalNo[i]=0;
+							rate->Growth[i]=0.0;
+							rate->NoEnsambles[i]=0;
+						}
+						
+					rate->i_max=rate->i_max + add_size;
 return;
 }
 
@@ -930,16 +920,19 @@ int ON = es->ON;
 int **s = es->s;
 sitio *SO=es->SO;
 float prob_tam;
-int n;
+int n,i;
 int max_tam=0;
+int totalSize=0;
+int size;
 
 		for(n=1;n<=ON;n++)
 		{
-			if(max_tam<s[SO[n].i][SO[n].j])
+			if(max_tam<es->individuals[n].size)
 			{
-				max_tam=s[SO[n].i][SO[n].j];
+				max_tam=es->individuals[n].size;
 			}			
 		}
+		
 
 int tot=max_tam + 1;
 
@@ -955,38 +948,51 @@ memset(rhoVec,0,tot * sizeof(int));
 {
 	if(TamDist->T!=T)
 	{
-		memset(TamDist->array,0, TamDist->i_max * sizeof(int));
+		for(i=0;i<=TamDist->i_max;i++){
+			TamDist->array[i]=0.0;
+		}		
 		TamDist->T=T;
 		TamDist->NoEnsambles=0;
+		TamDist->index_units=(es->units)*(es->units);
 	}
 }
 	if(Opcion=='R')
 	{
 		for(n=1;n<=ON;n++)
 		{
-			
-			rhoVec[(int)sqrt((double)s[SO[n].i][SO[n].j])]++;			
+			size=(int)sqrt((double)es->individuals[n].size);
+			rhoVec[size]++;
+			totalSize+=size;				
 		}
 	}else{
 		for(n=1;n<=ON;n++)
 		{
-			rhoVec[s[SO[n].i][SO[n].j]]++;			
+			rhoVec[es->individuals[n].size]++;	
+			totalSize+=es->individuals[n].size;		
 		}
 	}
-
+		
+		#pragma omp atomic
+		TamDist->array[0]+=(((float)totalSize)/(float)ON); // tamano 0 es el promedio. si no hay individuos de tamano 0.
+		
 		for(n=0;n<tot;n++)
 		{
 				if(rhoVec[n]!=0)
 				{
 					prob_tam=((float)rhoVec[n])/((float)(ON));
+					if(n>TamDist->i_max)
+					{
+						fprintf(stdout,"Tamanos mayores que lo que La distribucion puede guardar. Checar funcion ActualizaDistTamano_MP para encontrar el error");
+						exit(0);
+					}
 					#pragma omp atomic
-					TamDist->array[n]+=prob_tam; //peligro semetation fault si 'n' es mas grande que el tamano de TamDist->array
+					TamDist->array[n]+=prob_tam; 
 				}
 		}
 		
 		#pragma omp atomic
 		TamDist->NoEnsambles++;
-	
+
 return;
 }
 
@@ -1044,6 +1050,29 @@ void SetSpecie2(int NoEspecie, float Birth, float Coagulation,float CoagulationI
 return;
 }
 
+void setMaxMetabolic(estado *es, model *modelo)
+{
+	float Max,NMax_Metabolic,Birth,Dead,Coagulation1,CoagulationIntra;
+	int N;
+	Max=0.0;
+
+	for(N=1;N<=es->ON;N++)
+	{
+		Dead=modelo->dead_rate; 
+		Birth=modelo->birth_rate;
+		CoagulationIntra=modelo->intra_coagulation;
+		////Funcion k(s)
+		Coagulation1 = modelo->coagulation_factor * ((float)(es->individuals[N].size) + (modelo->health_factor)*(float)(es->individuals[N].size*es->individuals[N].health));
+		////
+	NMax_Metabolic = Birth + Dead + Coagulation1 + CoagulationIntra;
+		if(Max < NMax_Metabolic)
+		{
+			Max = NMax_Metabolic;
+		}
+	}
+	es->Max_Metabolic=Max;
+return;
+}
 
 void SumaFloat1D_MP(Float1D_MP *Origen,Float1D_MP *Destino)
 {
@@ -1059,6 +1088,7 @@ void SumaFloat1D_MP(Float1D_MP *Origen,Float1D_MP *Destino)
 	Destino->NoEnsambles+=Origen->NoEnsambles;
 	
 	Destino->T=Origen->T;
+	Destino->index_units=Origen->index_units;
 	
 return;
 }
@@ -1068,14 +1098,20 @@ void InicializaFloat1D_MP(Float1D_MP *Objeto, int i_max)
 		Objeto->NoEnsambles=0;
 		Objeto->i_max=i_max;
 		Objeto->T=0;
+		Objeto->index_units=1.0;
 
 		int tam = i_max + 1;
-		Objeto->array = (float *)calloc(tam, sizeof(float));
+		Objeto->array = (float *)malloc(tam * sizeof(float));
 		if(Objeto->array==NULL)
 		{
 			puts("No se pudo alojar memoria para Float1D_MP\n");
 			exit(1);
 		}	
+		int i;
+		for(i=0;i<tam;i++)
+		{
+			Objeto->array[i]=0.0;
+		}
 	
 return;
 }
@@ -1760,7 +1796,8 @@ void KillIndividual(estado *es, int N){
 	 (es->ON)--;	
 }
 
-void ActualizaUniv(estado *es, int N, model *modelo, Rate_log *rate)
+	
+void ActualizaUniv(estado *es, int N, model *modelo)
 {
 float Rand; 
 float pDead, pCreacion, pCoagulation1, Dead, Birth, CoagulationIntra, Coagulation1, pMetabolic;
@@ -1773,27 +1810,43 @@ int j=es->SO[N].j;
 sitio *SO = es->SO;
 int radioCre;
 int radioCoa;
-	
+
 int max_tamano = 50;
 
 float NMax_Metabolic; 
 	
 	Rand = F_JKISS();
-	
-	rate->TotalNo[es->individuals[N].size]++;  //1)Comentar si no es necesario, quita eficiencia.
-	
-	Dead=parametros[es->individuals[N].species].Dead; 
-	Birth=parametros[es->individuals[N].species].Birth;
-	CoagulationIntra=parametros[es->individuals[N].species].CoagulationIntra;
+
+	Dead=0.0;
+	Birth=0.0;
+	CoagulationIntra=0.0;
 
 //Funcion k(s,r,m):
 	//if(s[i][j]<=20)
 	//{
-	Coagulation1 = (float)s[i][j];
+	//Coagulation1 = modelo->coagulation_factor * ((float)(es->individuals[N].size) + (modelo->health_factor)*(float)(es->individuals[N].size*es->individuals[N].health));
+	Coagulation1 = K(es->individuals[N],modelo);
 	//}else{
 	//	Coagulation1 = 0.5*(float)(s[i][j]-20) + 20.0;
 	//}
 //
+
+////// funcion dot{m}(s,r,m)
+				//pMetabolic=(modelo->MetFact*pow((float)(s[i][j]),modelo->MetExp))/es->Max_Metabolic;
+				//if(s[i][j]>20)
+				//{
+					//pMetabolic=1.5*(float)s[i][j]/es->Max_Metabolic;
+				//}else{
+					//pMetabolic = modelo->metabolic_factor*(pow((float)(es->individuals[N].size + es->individuals[N].health), 2.0))/es->Max_Metabolic;
+					pMetabolic = M(es->individuals[N],modelo)/es->Max_Metabolic;
+				//}				
+			/////	
+				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
+				{
+					es->individuals[N].metabolism++;
+					es->control2=1;
+				}
+
 	pCreacion = Birth/es->Max_Metabolic;
 	pDead=Dead/es->Max_Metabolic;
 	pCoagulation1 = Coagulation1/es->Max_Metabolic;
@@ -1823,56 +1876,55 @@ float NMax_Metabolic;
 		}else{ //como o nada
 			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
 			{	
-			
-				//radioCoa=es->individuals[N].radio;
-				radioCoa=0.5*es->individuals[N].size;	//ratio between radio and size of individual
+				//es->individuals[N].radio=modelo->coagulation_radio_factor*sqrtf((float)(es->individuals[N].size)); //ratio between radio and size of individual
+				es->individuals[N].radio=R(es->individuals[N],modelo);
+				radioCoa=es->individuals[N].radio;	
 				 EligeUniforme(i,j,radioCoa,&vecino);
 				if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
 				if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
 				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
 				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-				
-			////// funcion dot{m}(s,r,m)
-				//pMetabolic=(modelo->MetFact*pow((float)(s[i][j]),modelo->MetExp))/es->Max_Metabolic;
-				//if(s[i][j]>20)
-				//{
-					//pMetabolic=1.5*(float)s[i][j]/es->Max_Metabolic;
-				//}else{
-					pMetabolic=0.5*(float)s[i][j]/es->Max_Metabolic;
-				//}				
-			/////	
-				if(Rand<=(pDead + pCreacion + pMetabolic))  //Cuento las necesidades metabolicas.
-				{
-					es->individuals[N].metabolism++;
-				}
+					
 				
 				if(s[vecino.i][vecino.j]<0)  //Si hay comida, como. 
-				{
+				{			
+					es->control=1;
 					s[vecino.i][vecino.j]=0;
-						if(es->individuals[N].metabolism<0)		//Si he llenado las necesidades de metabolizmo crezco
+					
+						if(es->individuals[N].metabolism < 1)		//Si he llenado las necesidades de metabolizmo crezco o sano
 						{
-							rate->GrowthNo[es->individuals[N].size]++;    //1)Comentar si no es necesario, quita eficiencia.
-							es->individuals[N].metabolism=0;
-							////cr =resources needed per radio increment(rate between s and r increments);
-						//	Rand2 = F_JKISS();	//if proportions are constant we could avoid this
-					//		if(Rand2<=1.0/(1.0+cr))		// taking care in tuning coagulation radio right(above).
-							es->individuals[N].size++;
-					//		else{
-					//		es->individuals[N].radio++;
-					//		}
-						////////
-							NMax_Metabolic = Birth + Dead + Coagulation1 + CoagulationIntra;
-							if(es->Max_Metabolic < NMax_Metabolic)
-							{
-								es->Max_Metabolic = NMax_Metabolic;
-							}				
+							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
+									es->individuals[N].metabolism=0;
+									////cr =resources needed per radio increment(rate between s and r increments);
+								//	Rand2 = F_JKISS();	//if proportions are constant we could avoid this
+							//		if(Rand2<=1.0/(1.0+cr))		// taking care in tuning coagulation radio right(above).
+									es->individuals[N].size++;
+							//		else{
+							//		es->individuals[N].radio++;
+							//		}
+								////////
+									NMax_Metabolic = Birth + Dead + Coagulation1 + CoagulationIntra;
+									if(es->Max_Metabolic < NMax_Metabolic)
+									{
+										es->Max_Metabolic = NMax_Metabolic;
+									}
+								}else{		// si esta enfermo lo sano un paso
+									es->individuals[N].health++;
+									es->individuals[N].metabolism=0;
+								}				
 						}else{			//Si no he llenado necesidades de metabolizmo, como para ir llenando necesidades de metabolizmo.
 							es->individuals[N].metabolism--;
 						}
-				}else{ //Si no hay comida, checo si corresponde morir.
-					if(((modelo->ResurcesFact)-es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
+				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
+					if((((modelo->health_factor)*(es->individuals[N].size)) - es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
 					{
-						KillIndividual(es,N);
+						if(es->individuals[N].health <= modelo->min_health) // si esta enfermo con gravedad prefijada muere
+						{
+							KillIndividual(es,N);		
+						}else{ // si no muere lo enfermo un paso mas
+							es->individuals[N].health--;
+							es->individuals[N].metabolism=0;
+						}
 					}
 				}
 			}
@@ -1893,6 +1945,9 @@ void InitRate_log(Rate_log *rate,const int Size)
 			rate->NoEnsambles[i]=0;
 		}
 		rate->i_max=Size;
+		
+	rate->GrowthNo=(int *)calloc(Size+1, sizeof(int));
+	rate->TotalNo=(int *)calloc(Size+1, sizeof(int));
 return;
 }
 
@@ -1900,6 +1955,8 @@ void FreeRate_log(Rate_log *rate)
 {
 	free(rate->Growth);
 	free(rate->NoEnsambles);
+	free(rate->GrowthNo);
+	free(rate->TotalNo);
 }
 
 float LikelyHood(Float1D_MP *Origin, Float1D_MP *Experiment)

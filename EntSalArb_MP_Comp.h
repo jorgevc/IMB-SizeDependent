@@ -1,5 +1,5 @@
 void GuardaEstado(estado *es, FILE *archivo);
-void CreaContenedor(char *nombre);
+void CreaContenedor(char *nombre,runDescriptor run);
 void GuardaEstadoEn(char *nombre, estado *es);
 FILE* AbreRhoVsTEn(char *contenedor);
 float ActualizaRhoVsT(estado *es,FILE *archivo,int NoEspecies);
