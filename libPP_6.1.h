@@ -45,6 +45,7 @@ sitio *SO;			/**< A 1 dimensional array of scructs sitio that is a list of the o
 float Meta_T;
 float Max_Metabolic;
 float units;
+float size_units;
 Individual *individuals;
 int control;
 int control2;
@@ -134,7 +135,8 @@ typedef struct {
 	int X;
 	int Y;
 	int NoEnsambles;
-	float units;
+	float grid_units;
+	float size_units;
 	int T_max;
 	float resource_rate;
 	model Model;

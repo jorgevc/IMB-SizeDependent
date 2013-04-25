@@ -155,6 +155,8 @@ ile = NDX + 1;
 	es->Max_Metabolic=Max_Metabolic;
 	es->Meta_T = 0.0;
 	es->individuals=NULL;
+	es->units=1.0;
+	es->size_units=1.0;
 return;
 }
 
@@ -272,7 +274,7 @@ int **INDICE = es->INDICE;
 				es->individuals[es->ON].species=tipo;
 				es->individuals[es->ON].size=1;
 				es->individuals[es->ON].radio=1;
-				es->individuals[es->ON].metabolism=1;
+				es->individuals[es->ON].metabolism=0;
 				es->individuals[es->ON].health=0;
 				}
 				printf("\nWARNING!! -> InsertaIndividuoEn is deprecated!!\n");
@@ -606,7 +608,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 								indv.species=tipo;
 								indv.size=tamano;
 								indv.radio=1;
-								indv.metabolism=1;
+								indv.metabolism=0;
 								InsertIndividualAt(es,i,j,indv,1);
 							}
 						}
@@ -639,7 +641,7 @@ Libres=((NDX * NDY) - (es->ON))-N;
 							indv.species=tipo;
 							indv.size=tamano;
 							indv.radio=1;
-							indv.metabolism=1;
+							indv.metabolism=0;
 							InsertIndividualAt(es,i,j,indv,1);
 						}
 					}
@@ -953,7 +955,7 @@ memset(rhoVec,0,tot * sizeof(int));
 		}		
 		TamDist->T=T;
 		TamDist->NoEnsambles=0;
-		TamDist->index_units=(es->units)*(es->units);
+		TamDist->index_units=es->size_units;
 	}
 }
 	if(Opcion=='R')
@@ -1843,7 +1845,7 @@ float NMax_Metabolic;
 			/////	
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
-					es->individuals[N].metabolism++;
+					es->individuals[N].metabolism--;
 					es->control2=1;
 				}
 
@@ -1869,7 +1871,7 @@ float NMax_Metabolic;
 				indiv.size=1;
 				indiv.species=es->individuals[N].species;
 				indiv.radio=1;
-				indiv.metabolism=1;
+				indiv.metabolism=0;
 				
 				InsertIndividualAt(es,vecino.i,vecino.j,indiv,0);
 					
@@ -1891,7 +1893,7 @@ float NMax_Metabolic;
 					es->control=1;
 					s[vecino.i][vecino.j]=0;
 					
-						if(es->individuals[N].metabolism < 1)		//Si he llenado las necesidades de metabolizmo crezco o sano
+						if(es->individuals[N].metabolism >= modelo->growth_constant)		//Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 									es->individuals[N].metabolism=0;
@@ -1913,10 +1915,10 @@ float NMax_Metabolic;
 									es->individuals[N].metabolism=0;
 								}				
 						}else{			//Si no he llenado necesidades de metabolizmo, como para ir llenando necesidades de metabolizmo.
-							es->individuals[N].metabolism--;
+							es->individuals[N].metabolism++;
 						}
 				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
-					if((((modelo->health_factor)*(es->individuals[N].size)) - es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
+					if((((modelo->health_factor)*(modelo->growth_constant)*(es->individuals[N].size)) + es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
 					{
 						if(es->individuals[N].health <= modelo->min_health) // si esta enfermo con gravedad prefijada muere
 						{

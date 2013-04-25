@@ -60,7 +60,7 @@ file=fopen(copyFileName,"w");
 
 fprintf(file,"X=%d\n",run.X);
 fprintf(file,"Y=%d\n",run.Y);
-fprintf(file,"units=%f  (Area_units=units^2)\n",run.units);
+fprintf(file,"units=%f  (Area_units=units^2)\n",run.grid_units);
 fprintf(file,"T_max=%d\n",run.T_max);
 fprintf(file,"NoEnsambles=%d\n", run.NoEnsambles);
 

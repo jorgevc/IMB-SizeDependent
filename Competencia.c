@@ -17,12 +17,12 @@ main(){
 runDescriptor run;
 run.X=500;
 run.Y=run.X;
-run.units=3.0;
-run.T_max=(run.units*run.units)*3000;
+run.grid_units=3.0;
+run.T_max=(run.grid_units*run.grid_units)*3000;
 run.NoEnsambles=20;
 
-float const Area_units=run.units*run.units;
-float const Length_units=run.units;
+float const Area_units=run.grid_units*run.grid_units;
+float const Length_units=run.grid_units;
 
 run.Model.coagulation_exp=1.0;  //no cambiar aqui
 run.Model.coagulation_factor=(Area_units/pow(Area_units,run.Model.coagulation_exp))*10.0; 
@@ -33,14 +33,15 @@ run.Model.metabolic_factor=(Area_units/pow(Area_units,run.Model.metabolic_exp))*
 run.Model.health_factor=0.1; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 run.Model.min_health=0;
 run.resource_rate=1.0;
-run.Model.growth_constant=(Area_units)*1; // (int) needed resources per unit size increse.
+run.size_units=1.0;
+run.Model.growth_constant=(Area_units/run.size_units)*1; // (int) needed resources per unit size increse.
 
 run.Model.birth_rate=0.0;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
 
-int const write_interval=(run.units*run.units)*100;
-int const separation=run.units*80;
+int const write_interval=(run.grid_units*run.grid_units)*100;
+int const separation=run.grid_units*80;
 ////
 int T_max = run.T_max;
 int NoEnsambles=run.NoEnsambles;
@@ -53,12 +54,12 @@ Individual indv;
 indv.species=1;
 indv.size=10;
 indv.radio=1;
-indv.metabolism=1;
+indv.metabolism=0;
 indv.health=0;
 
-int NDX=(run.X*run.units)+1;
-int NDY=(run.Y*run.units)+1;
-float delta_s=1.0/(run.units*run.units);
+int NDX=(run.X*run.grid_units)+1;
+int NDY=(run.Y*run.grid_units)+1;
+float delta_s=1.0/(run.size_units);
 
 omp_set_num_threads(4);
 
@@ -85,7 +86,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/24_April/1_test");
+	sprintf(contenedor,"DATOS_TAM/25_April/1");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -121,7 +122,8 @@ FILE *file;
 		{
 			AlojaMemoria(&e[Par], NDX, NDY);
 			ResetEstado(&e[Par]);
-			e[Par].units=run.units;
+			e[Par].units=run.grid_units;
+			e[Par].size_units=run.size_units;
 		}
 
 		init_JKISS(); //Inicializa la semilla de cada proceso.
