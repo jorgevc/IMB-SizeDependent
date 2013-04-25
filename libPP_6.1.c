@@ -763,7 +763,7 @@ float TEnteroAnterior;
 float TMetabolicActual;
 
 //////////// rate internals
-int size;
+int size,meta;
 int on;
 sitio place;
 
@@ -797,6 +797,7 @@ sitio place;
 				//}
 			//}
 			size=es->individuals[Indice].size;
+			meta=es->individuals[Indice].metabolism;
 			on=es->ON;
 			es->control=0;
 			es->control2=0;
@@ -825,8 +826,11 @@ sitio place;
 					if((size+1)==es->individuals[Indice].size)
 					{		
 						rate[0].GrowthNo[size]++;
-					}else{
-						rate[3].GrowthNo[size]++;
+					}else{				
+							if(meta == es->individuals[Indice].metabolism || meta < 0)
+							{
+								rate[3].GrowthNo[size]++;
+							}
 					}
 				}			
 			}
@@ -1892,8 +1896,9 @@ float NMax_Metabolic;
 				{			
 					es->control=1;
 					s[vecino.i][vecino.j]=0;
+					es->individuals[N].metabolism++;
 					
-						if(es->individuals[N].metabolism >= modelo->growth_constant)		//Si he llenado las necesidades de metabolizmo crezco o sano
+						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 									es->individuals[N].metabolism=0;
@@ -1914,8 +1919,6 @@ float NMax_Metabolic;
 									es->individuals[N].health++;
 									es->individuals[N].metabolism=0;
 								}				
-						}else{			//Si no he llenado necesidades de metabolizmo, como para ir llenando necesidades de metabolizmo.
-							es->individuals[N].metabolism++;
 						}
 				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
 					if((((modelo->health_factor)*(modelo->growth_constant)*(es->individuals[N].size)) + es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
