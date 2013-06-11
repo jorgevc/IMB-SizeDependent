@@ -60,7 +60,8 @@ file=fopen(copyFileName,"w");
 
 fprintf(file,"X=%d\n",run.X);
 fprintf(file,"Y=%d\n",run.Y);
-fprintf(file,"units=%f  (Area_units=units^2)\n",run.grid_units);
+fprintf(file,"grid_units=%f  (Area_units=units^2)\n",run.grid_units);
+fprintf(file,"size_units=%f",run.size_units);
 fprintf(file,"T_max=%d\n",run.T_max);
 fprintf(file,"NoEnsambles=%d\n", run.NoEnsambles);
 
@@ -73,10 +74,14 @@ fprintf(file,"coagulation_radio_factor=%f  (units/(Area_units)^cr_exp)*factor\n"
 fprintf(file,"\ncoagulation_metabolic_exp=%f\n", run.Model.metabolic_exp);
 fprintf(file,"metabolic_factor=%f  (Area_units/(Area_units)^m_exp)*factor\n", run.Model.metabolic_factor);
 
+fprintf(file,"\ngrowth_constant=%d  ([int]>0 needed resources per unit size increse.)",run.Model.growth_constant);
+
 fprintf(file,"\nhealth_factor=%f\n", run.Model.health_factor);
 fprintf(file,"\nmin_health=%d\n", run.Model.min_health);
 
 fprintf(file,"\nresource_rate=%f\n", run.resource_rate);
+
+
 fclose(file);
 	
 fprintf(stdout,"\nlisto creando contenedor!\n");

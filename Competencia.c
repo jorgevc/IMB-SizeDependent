@@ -15,35 +15,40 @@ main(){
 
 ///////////////////////////Inicializa parametros de la simulacion
 runDescriptor run;
-run.X=500;
+run.X=200;
 run.Y=run.X;
-run.grid_units=3.0;
-run.size_units=9.0;
+run.grid_units=4.0;
+run.size_units=1.0;
 
-run.T_max=(run.grid_units*run.grid_units)*3000;
-run.NoEnsambles=20;
+run.T_max=(run.grid_units*run.grid_units)*100000;
+run.NoEnsambles=4;
 
 float const Area_units=run.grid_units*run.grid_units;
 float const Length_units=run.grid_units;
 
-run.Model.coagulation_exp=1.0;  //no cambiar aqui
-run.Model.coagulation_factor=(Area_units/pow(run.size_units,run.Model.coagulation_exp))*10.0; 
-run.Model.coagulation_radio_exp=0.5; //no cambiar aqui
+run.Model.coagulation_exp=1.0;  //no cambiar solo aqui
+run.Model.coagulation_factor=(Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0; 
+run.Model.coagulation_radio_exp=0.25; //no cambiar solo aqui
 run.Model.coagulation_radio_factor=(Length_units/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
-run.Model.metabolic_exp=2.0;
-run.Model.metabolic_factor=(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.01; 
+run.Model.metabolic_exp=1.0; //no cambiar solo aqui
+run.Model.metabolic_factor=(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
 run.Model.health_factor=0.1; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+#ifdef HEALTH_TRACK	
 run.Model.min_health=0;
+#else
+run.Model.min_health=0;
+#endif
+
 run.resource_rate=1.0;
-//(Area_units>=size_units)
-run.Model.growth_constant=(Area_units/run.size_units)*100.0; // (int) needed resources per unit size increse.
+
+run.Model.growth_constant=((Area_units/run.size_units)*3.14*4.0); // (int)>0 needed resources per unit size increse.
 
 run.Model.birth_rate=0.0;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
 
-int const write_interval=(run.grid_units*run.grid_units)*100;
-int const separation=run.grid_units*80;
+int const write_interval=(run.grid_units*run.grid_units)*5000;
+int const separation=run.grid_units*10;
 ////
 int T_max = run.T_max;
 int NoEnsambles=run.NoEnsambles;
@@ -54,8 +59,8 @@ modelo = run.Model;
 
 Individual indv;
 indv.species=1;
-indv.size=10;
-indv.radio=1;
+indv.size=run.size_units*2;
+indv.radio=run.grid_units*1; 
 indv.metabolism=0;
 indv.health=0;
 
@@ -88,7 +93,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/25_April/4");
+	sprintf(contenedor,"DATOS_TAM/29_April/2");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -96,6 +101,9 @@ Float1D_MP meanDensity;
 	
 Float1D_MP meanSize;
 	InicializaFloat1D_MP(&meanSize, T_max+10);
+	
+float time_map[T_max+10];
+time_map[0]=0.0;
 
 FILE *file;
 
@@ -192,10 +200,10 @@ FILE *file;
 		//int i;
 		for(i=1;i<=T_max;i++)
 		{		
+			
 			for(Par=0;Par<MaxPar;Par++)
 			{
-				BarrMCcRyCampTamano(&e[Par], run.resource_rate, &modelo, rate);
-				ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);
+				BarrMCcRyCampTamano(&e[Par], run.resource_rate, &modelo, rate);			
 				ActualizaDistTamano_MP(&e[Par], &TamDist, 'A');
 				#pragma omp atomic
 				meanDensity.array[e[Par].T]+=e[Par].ON;
@@ -204,6 +212,12 @@ FILE *file;
 			#pragma omp barrier
 			#pragma omp atomic
 			meanSize.array[TamDist.T]+=TamDist.array[0];
+			
+			#pragma omp master
+			{
+				time_map[e[0].T]=e[0].Meta_T;
+		//		ActualizaRecursos_MP(&e[0],&MP_RhoVsT);
+			}
 			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
 				{
@@ -262,8 +276,10 @@ FILE *file;
 		fclose(taza);
 	
 	}
-
-		SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
+	//	#pragma omp master
+	//	{
+	//	SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
+	//	}
 		
 		//Libera Memoria
 		for(Par=0;Par<MaxPar;Par++)
@@ -274,17 +290,17 @@ FILE *file;
 		LiberaMemoriaFloat2D_MP(&MP_RhoVsT);
 	}	/////TERMINA PARALLEL
 
-GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
+//GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
 LiberaMemoriaFloat2D_MP(&MP_RhoVsT_1);
 LiberaMemoriaFloat1D_MP(&TamDist_1);
 
 char thinning[50];
 sprintf(thinning,"%s/thinning",contenedor);
 file=fopen(thinning, "w");
-fputs("# T meanSize meanDensity\n",file);
+fputs("# T meanSize meanDensity fisicalTime\n",file);
 int r;
 for(r=1;r<=T_max;r++){
-fprintf(file,"%d %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles);
+fprintf(file,"%d %f %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles, time_map[r]);
 }
 fclose(file);
 

@@ -1,5 +1,5 @@
-#define K(individual, Model) Model->coagulation_factor * ((float)(individual.size) + (Model->health_factor)*(float)(individual.size*individual.health))
+#define K(individual, Model) Model->coagulation_factor * (float)(individual.size)
 	
-#define R(individual, Model) Model->coagulation_radio_factor*sqrtf((float)(individual.size))
+#define R(individual, Model) Model->coagulation_radio_factor*sqrtf(sqrtf((float)(individual.size)))
 
-#define M(individual, Model) Model->metabolic_factor*(pow((float)(individual.size + individual.health), 2.0))
+#define M(individual, Model) Model->metabolic_factor*(float)(individual.size)

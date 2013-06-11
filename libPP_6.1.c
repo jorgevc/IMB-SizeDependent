@@ -755,6 +755,7 @@ return;
 
 void BarrMCcRyCampTamano(estado *es,float flujo_recursos, model *param, Rate_log *rate)
 {
+	int static r=1;
 int Indice,vtipo;
 float DT=0.0;
 float TMetabolicIni=es->Meta_T;
@@ -782,20 +783,16 @@ sitio place;
 	TEnteroAnterior = floor(es->Meta_T);
 	
 	while(DT<1.0 && es->ON>0){
+		Indice = I_JKISS(1,(es->ON));
 			TMetabolicActual= TMetabolicIni + DT/LMax_Metabolic;
 			if(TMetabolicActual - TEnteroAnterior >=1.0)
 			{				
 				GeneraEstadoAleatorioTamano(es, flujo_recursos, -1, -1);			
-				TEnteroAnterior += 1.0;
+				TEnteroAnterior += 1.0;	
 			}
 			 DT+=1.0/(es->ON); 
-			Indice = I_JKISS(1,(es->ON));
-			//#pragma omp master
-			//{
-				//if(DT>=1.0){
-			//printf("llega DT:%f\n",DT);
-				//}
-			//}
+			
+			
 			size=es->individuals[Indice].size;
 			meta=es->individuals[Indice].metabolism;
 			on=es->ON;
@@ -1892,6 +1889,8 @@ float NMax_Metabolic;
 				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
 					
 				
+				
+				
 				if(s[vecino.i][vecino.j]<0)  //Si hay comida, como. 
 				{			
 					es->control=1;
@@ -1900,7 +1899,9 @@ float NMax_Metabolic;
 					
 						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
+							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
+							#endif
 									es->individuals[N].metabolism=0;
 									////cr =resources needed per radio increment(rate between s and r increments);
 								//	Rand2 = F_JKISS();	//if proportions are constant we could avoid this
@@ -1915,14 +1916,18 @@ float NMax_Metabolic;
 									{
 										es->Max_Metabolic = NMax_Metabolic;
 									}
+									
+								#ifdef HEALTH_TRACK	
 								}else{		// si esta enfermo lo sano un paso
 									es->individuals[N].health++;
 									es->individuals[N].metabolism=0;
-								}				
+								}
+								#endif			
 						}
 				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
 					if((((modelo->health_factor)*(modelo->growth_constant)*(es->individuals[N].size)) + es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
 					{
+						#ifdef HEALTH_TRACK
 						if(es->individuals[N].health <= modelo->min_health) // si esta enfermo con gravedad prefijada muere
 						{
 							KillIndividual(es,N);		
@@ -1930,6 +1935,9 @@ float NMax_Metabolic;
 							es->individuals[N].health--;
 							es->individuals[N].metabolism=0;
 						}
+						#else
+							KillIndividual(es,N);
+						#endif
 					}
 				}
 			}
