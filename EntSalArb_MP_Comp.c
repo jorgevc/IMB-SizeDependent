@@ -58,6 +58,11 @@ strcpy(copyFileName,nombre);
 strcat(copyFileName,"/descriptor");
 file=fopen(copyFileName,"w");
 
+#ifdef EXPLICIT_RESOURCES
+fprintf(file,"Algorithm: EXPLICIT_RESOURCES\n\n");
+#else 
+fprintf(file,"Algorithm: VIRTUAL RESOURCES GRID\n\n");
+#endif
 fprintf(file,"X=%d\n",run.X);
 fprintf(file,"Y=%d\n",run.Y);
 fprintf(file,"grid_units=%f  (Area_units=units^2)\n",run.grid_units);
@@ -79,8 +84,9 @@ fprintf(file,"\ngrowth_constant=%d  ([int]>0 needed resources per unit size incr
 fprintf(file,"\nhealth_factor=%f\n", run.Model.health_factor);
 fprintf(file,"\nmin_health=%d\n", run.Model.min_health);
 
-fprintf(file,"\nresource_rate=%f\n", run.resource_rate);
-
+fprintf(file,"\nresource_rate=%f\n", run.Model.resource_rate);
+fprintf(file,"ResourcesScale=%f\n", run.Model.ResourcesScale);
+fprintf(file,"competitionAsymetry=%f\n", run.Model.competitionAsymetry);
 
 fclose(file);
 	

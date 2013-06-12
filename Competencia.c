@@ -15,31 +15,43 @@ main(){
 
 ///////////////////////////Inicializa parametros de la simulacion
 runDescriptor run;
-run.X=200;
+run.X=200;  	//unidades "fisicas"
 run.Y=run.X;
-run.grid_units=4.0;
-run.size_units=1.0;
+run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
+run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
 run.T_max=(run.grid_units*run.grid_units)*100000;
 run.NoEnsambles=4;
 
+#ifdef EXPLICIT_RESOURCES
+printf("EXPLICIT_RESOURCES=TRUE\n");
+run.Model.ResourcesScale = 1; //not used in this case
+run.Model.competitionAsymetry = 1.0; //not used in this case
 float const Area_units=run.grid_units*run.grid_units;
 float const Length_units=run.grid_units;
+#else
+//in this case the Area_units and Length_units are units of the imaginary resources grid.
+run.Model.ResourcesScale = 1; //conversion factor to the imaginary resources grid
+run.Model.competitionAsymetry = 1.0;
+float const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
+float const Length_units=run.grid_units*run.Model.ResourcesScale;
+#endif
 
-run.Model.coagulation_exp=1.0;  //no cambiar solo aqui
+run.Model.coagulation_exp=1.0;  //cambiar tambien en model.c
 run.Model.coagulation_factor=(Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0; 
-run.Model.coagulation_radio_exp=0.25; //no cambiar solo aqui
-run.Model.coagulation_radio_factor=(Length_units/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
-run.Model.metabolic_exp=1.0; //no cambiar solo aqui
+run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c
+run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
+run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
 run.Model.metabolic_factor=(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
 run.Model.health_factor=0.1; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+
 #ifdef HEALTH_TRACK	
 run.Model.min_health=0;
 #else
 run.Model.min_health=0;
 #endif
 
-run.resource_rate=1.0;
+run.Model.resource_rate=1.0;
 
 run.Model.growth_constant=((Area_units/run.size_units)*3.14*4.0); // (int)>0 needed resources per unit size increse.
 
@@ -93,7 +105,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/29_April/2");
+	sprintf(contenedor,"DATOS_TAM/12_Jun/3");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -150,7 +162,9 @@ FILE *file;
 						InsertIndividualAt(&e[Par],i,j,indv,1);
 					}
 				}
-			GeneraEstadoAleatorioTamano(&e[Par], run.resource_rate, -1, -1);
+			#ifdef EXPLICIT_RESOURCES
+			GeneraEstadoAleatorioTamano(&e[Par], run.Model.resource_rate, -1, -1);
+			#endif
 			setMaxMetabolic(&e[Par],&modelo);
 			}
 
@@ -203,7 +217,7 @@ FILE *file;
 			
 			for(Par=0;Par<MaxPar;Par++)
 			{
-				BarrMCcRyCampTamano(&e[Par], run.resource_rate, &modelo, rate);			
+				BarrMCcRyCampTamano(&e[Par], run.Model.resource_rate, &modelo, rate);			
 				ActualizaDistTamano_MP(&e[Par], &TamDist, 'A');
 				#pragma omp atomic
 				meanDensity.array[e[Par].T]+=e[Par].ON;

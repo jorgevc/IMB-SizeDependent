@@ -1,3 +1,7 @@
+
+#define M4R_MAX2 1600.0 // =4r^{2}_max
+
+//#define EXPLICIT_RESOURCES
 /** Contains a coordinate pair. 
  * Generaly it is used to label a site on a lattice.
 */
@@ -22,11 +26,17 @@ int RadioCoaIntra;		/**< Radio within Intra-Competion acts in units of lattice s
 } especie;
 
 typedef struct {
+sitio *sites;
+int NoMembers;
+} sitesList;
+
+typedef struct {
 int species;
 int size;
 int radio;
 int metabolism;
 int health;
+sitesList neighbours;
 } Individual;
 
 /** Contains the state of the system(lattice). */
@@ -111,6 +121,9 @@ float coagulation_radio_exp;
 float coagulation_radio_factor;
 float metabolic_exp;
 float health_factor;
+float resource_rate;
+int ResourcesScale;
+float competitionAsymetry;
 int min_health;
 int growth_constant;
 float (*coagulationFuntion)(Individual *);
@@ -138,7 +151,6 @@ typedef struct {
 	float grid_units;
 	float size_units;
 	int T_max;
-	float resource_rate;
 	model Model;
 } runDescriptor;
 

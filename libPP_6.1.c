@@ -162,6 +162,11 @@ return;
 
 void LiberaMemoria(estado *es)
 {
+	int n;
+	for(n=1;n<=es->ON;n++)
+	{
+		free(es->individuals[n].neighbours.sites);
+	}
 	free(es->s[0]);
 	free(es->INDICE[0]);
 	free(es->SO);
@@ -258,7 +263,7 @@ return;
 }
 
 
-void InsertaIndividuoEn(estado *es,int i,int j,int tipo,int encimar)
+void InsertaIndividuoEn(estado *es,int i,int j,int tipo,int encimar) // deprecated!
 {
 int **s = es->s; 
 sitio *SO = es->SO;
@@ -282,7 +287,7 @@ return;
 }
 
 int InsertIndividualAt(estado *es,int i,int j,Individual individual,int overWrite)
-{
+{						
 	int status=0;
 	if(es->s[i][j]<=0 || overWrite==1){
 		es->s[i][j]=1;
@@ -294,7 +299,26 @@ int InsertIndividualAt(estado *es,int i,int j,Individual individual,int overWrit
 		es->individuals=(Individual *)realloc(es->individuals, (es->ON + 1)*sizeof(Individual));
 		if(es->individuals)
 		{
+			individual.neighbours.NoMembers = 0;
 			es->individuals[es->ON]=individual;
+			
+			float d2;
+			int n;
+			for(n=1 ; n < es->ON ; n++)
+			{
+				d2=(pow(i - es->SO[n].i , 2.0) + pow(j - es->SO[n].j, 2.0));
+				
+				if(d2 < M4R_MAX2)
+				{	
+					es->individuals[es->ON].neighbours.sites=(sitio *)realloc(es->individuals[es->ON].neighbours.sites, (es->individuals[es->ON].neighbours.NoMembers + 1)*sizeof(sitio));
+					es->individuals[es->ON].neighbours.sites[es->individuals[es->ON].neighbours.NoMembers]=es->SO[n];
+					es->individuals[es->ON].neighbours.NoMembers++;
+					
+					es->individuals[n].neighbours.sites=(sitio *)realloc(es->individuals[n].neighbours.sites, (es->individuals[n].neighbours.NoMembers + 1)*sizeof(sitio));
+					es->individuals[n].neighbours.sites[es->individuals[n].neighbours.NoMembers]=es->SO[es->ON];
+					es->individuals[n].neighbours.NoMembers++;
+				}
+			}
 			status = 1;
 		}
 	}
@@ -785,11 +809,13 @@ sitio place;
 	while(DT<1.0 && es->ON>0){
 		Indice = I_JKISS(1,(es->ON));
 			TMetabolicActual= TMetabolicIni + DT/LMax_Metabolic;
+			#ifdef EXPLICIT_RESOURCES
 			if(TMetabolicActual - TEnteroAnterior >=1.0)
 			{				
 				GeneraEstadoAleatorioTamano(es, flujo_recursos, -1, -1);			
 				TEnteroAnterior += 1.0;	
 			}
+			#endif
 			 DT+=1.0/(es->ON); 
 			
 			
@@ -1792,11 +1818,14 @@ return;
 }
 
 void KillIndividual(estado *es, int N){
+	 free(es->individuals[N].neighbours.sites);
 	 es->s[es->SO[N].i][es->SO[N].j]=0;
 	 es->SO[N]=es->SO[(es->ON)];
 	 es->individuals[N]=es->individuals[es->ON];
-	 es->INDICE[es->SO[N].i][es->SO[N].j]=N;
-	 (es->ON)--;	
+	 es->INDICE[es->SO[N].i][es->SO[N].j]=N;	 
+	 (es->ON)--;
+	 es->individuals=(Individual *)realloc(es->individuals, (es->ON + 1)*sizeof(Individual)); 
+return;
 }
 
 	
@@ -1881,20 +1910,59 @@ float NMax_Metabolic;
 			{	
 				//es->individuals[N].radio=modelo->coagulation_radio_factor*sqrtf((float)(es->individuals[N].size)); //ratio between radio and size of individual
 				es->individuals[N].radio=R(es->individuals[N],modelo);
-				radioCoa=es->individuals[N].radio;	
-				 EligeUniforme(i,j,radioCoa,&vecino);
+				
+				#ifdef EXPLICIT_RESOURCES
+				radioCoa=es->individuals[N].radio;
+				EligeUniforme(i,j,radioCoa,&vecino);
 				if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
 				if(vecino.j <= 0){vecino.j = NDY + vecino.j;}
 				if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
 				if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya
-					
-				
-				
-				
+							
 				if(s[vecino.i][vecino.j]<0)  //Si hay comida, como. 
-				{			
-					es->control=1;
-					s[vecino.i][vecino.j]=0;
+				{
+				s[vecino.i][vecino.j]=0;
+				#else
+				int ResourcesScale = modelo->ResourcesScale;
+				radioCoa=es->individuals[N].radio;
+				EligeUniforme(i*ResourcesScale,j*ResourcesScale,radioCoa,&vecino);
+				if(vecino.i <= 0){vecino.i = NDX*ResourcesScale + vecino.i;}
+				if(vecino.j <= 0){vecino.j = NDY*ResourcesScale + vecino.j;}
+				if(vecino.i > NDX){vecino.i = vecino.i - NDX*ResourcesScale;}
+				if(vecino.j > NDY){vecino.j = vecino.j - NDY*ResourcesScale;}
+				
+				float pResource=modelo->resource_rate;
+				int ne,competingRatio;
+				sitio competingSite;
+				float d2,Oval,Xval; 
+				for(ne=0;ne < es->individuals[N].neighbours.NoMembers; ne++)
+				{
+					competingSite = es->individuals[N].neighbours.sites[ne];
+					while(s[competingSite.i][competingSite.j] < 1 && es->individuals[N].neighbours.NoMembers > ne)
+					{
+						es->individuals[N].neighbours.NoMembers--;
+						competingSite = es->individuals[N].neighbours.sites[es->individuals[N].neighbours.NoMembers];
+						es->individuals[N].neighbours.sites[ne]=competingSite;			
+					}
+					
+					if(0 < s[competingSite.i][competingSite.j])
+					{
+						d2 = pow((competingSite.i * ResourcesScale) - vecino.i, 2.0) + pow((competingSite.j * ResourcesScale) - vecino.j, 2.0);
+						competingRatio = es->individuals[es->INDICE[competingSite.i][competingSite.j]].radio;
+						if(d2 < competingRatio*competingRatio)
+						{
+							Oval=pow((float)es->individuals[N].size , modelo->competitionAsymetry);
+							Xval=pow((float)es->individuals[es->INDICE[competingSite.i][competingSite.j]].size, modelo->competitionAsymetry);
+							pResource*= Oval/(Oval + Xval);
+						}			
+					}
+				}
+				
+				float Rand2 = F_JKISS();
+				if(Rand2 <= pResource ) //Si hay comida como
+				{
+				#endif			
+					es->control=1;			
 					es->individuals[N].metabolism++;
 					
 						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
