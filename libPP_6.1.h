@@ -2,6 +2,8 @@
 #define M4R_MAX2 1600.0 // =4r^{2}_max
 
 //#define EXPLICIT_RESOURCES
+//#define VIRTUAL_GRID
+#define SOI
 /** Contains a coordinate pair. 
  * Generaly it is used to label a site on a lattice.
 */
@@ -492,3 +494,5 @@ void CFFT_Univ_MP(estado *es, CorrDescriptor *Especifica, Float2D_MP *correlacio
 
 void InitRate_log(Rate_log *rate,const int Size);
 void FreeRate_log(Rate_log *rate);
+
+float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale);

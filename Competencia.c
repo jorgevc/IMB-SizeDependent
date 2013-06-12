@@ -12,6 +12,15 @@ Copyright 2012 Jorge Velazquez
 
 
 main(){	
+#ifdef EXPLICIT_RESOURCES
+printf("EXPLICIT_RESOURCES=TRUE\n");
+#endif
+#ifdef VIRTUAL_GRID
+printf("VIRUAL_GRID=TRUE\n");
+#endif
+#ifdef SOI
+printf("SOI=TRUE\n");
+#endif
 
 ///////////////////////////Inicializa parametros de la simulacion
 runDescriptor run;
@@ -24,14 +33,13 @@ run.T_max=(run.grid_units*run.grid_units)*100000;
 run.NoEnsambles=4;
 
 #ifdef EXPLICIT_RESOURCES
-printf("EXPLICIT_RESOURCES=TRUE\n");
 run.Model.ResourcesScale = 1; //not used in this case
 run.Model.competitionAsymetry = 1.0; //not used in this case
 float const Area_units=run.grid_units*run.grid_units;
 float const Length_units=run.grid_units;
 #else
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
-run.Model.ResourcesScale = 1; //conversion factor to the imaginary resources grid
+run.Model.ResourcesScale = 10; //conversion factor to the imaginary resources grid or SOI resolution
 run.Model.competitionAsymetry = 1.0;
 float const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 float const Length_units=run.grid_units*run.Model.ResourcesScale;
@@ -52,6 +60,10 @@ run.Model.min_health=0;
 #endif
 
 run.Model.resource_rate=1.0;
+#ifdef SOI
+run.Model.resource_rate*=100;
+run.Model.growth_constant*=100;
+#endif
 
 run.Model.growth_constant=((Area_units/run.size_units)*3.14*4.0); // (int)>0 needed resources per unit size increse.
 
@@ -105,7 +117,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/12_Jun/3");
+	sprintf(contenedor,"DATOS_TAM/12_Jun/3_SOI");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;

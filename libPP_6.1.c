@@ -1873,11 +1873,15 @@ float NMax_Metabolic;
 					pMetabolic = M(es->individuals[N],modelo)/es->Max_Metabolic;
 				//}				
 			/////	
+			#ifdef SOI
+				es->individuals[N].metabolism -= 100*pMetabolic;
+			#else
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
 					es->individuals[N].metabolism--;
 					es->control2=1;
 				}
+			#endif
 
 	pCreacion = Birth/es->Max_Metabolic;
 	pDead=Dead/es->Max_Metabolic;
@@ -1922,7 +1926,8 @@ float NMax_Metabolic;
 				if(s[vecino.i][vecino.j]<0)  //Si hay comida, como. 
 				{
 				s[vecino.i][vecino.j]=0;
-				#else
+				#endif
+				#ifdef VIRTUAL_GRID
 				int ResourcesScale = modelo->ResourcesScale;
 				radioCoa=es->individuals[N].radio;
 				EligeUniforme(i*ResourcesScale,j*ResourcesScale,radioCoa,&vecino);
@@ -1961,10 +1966,44 @@ float NMax_Metabolic;
 				float Rand2 = F_JKISS();
 				if(Rand2 <= pResource ) //Si hay comida como
 				{
-				#endif			
-					es->control=1;			
-					es->individuals[N].metabolism++;
+				#endif
+				#ifdef SOI
+				int ResourcesScale = modelo->ResourcesScale;
+				float pResource=0.0;
+				int ne,competingRatio;
+				sitio competingSite;
+				float d2, overlapArea,Oval,Xval,totalArea,partialArea;
+				totalArea = 3.1416 * es->individuals[N].radio*es->individuals[N].radio;
+				partialArea = totalArea;
+				for(ne=0;ne < es->individuals[N].neighbours.NoMembers; ne++)
+				{
+					competingSite = es->individuals[N].neighbours.sites[ne];
+					while(s[competingSite.i][competingSite.j] < 1 && es->individuals[N].neighbours.NoMembers > ne)
+					{
+						es->individuals[N].neighbours.NoMembers--;
+						competingSite = es->individuals[N].neighbours.sites[es->individuals[N].neighbours.NoMembers];
+						es->individuals[N].neighbours.sites[ne]=competingSite;			
+					}
 					
+					if(0 < s[competingSite.i][competingSite.j])
+					{
+						competingRatio = es->individuals[es->INDICE[competingSite.i][competingSite.j]].radio;			
+						overlapArea = CircleOverlap(es->SO[N],es->individuals[N].radio,competingSite,competingRatio,ResourcesScale);
+						if(overlapArea > 0.0)
+						{
+							Oval=pow((float)es->individuals[N].size , modelo->competitionAsymetry);
+							Xval=pow((float)es->individuals[es->INDICE[competingSite.i][competingSite.j]].size, modelo->competitionAsymetry);
+							pResource += (Oval/(Oval + Xval))*(overlapArea/totalArea);
+							partialArea -= overlapArea; 
+						}
+					}
+				}
+					pResource += partialArea/totalArea;
+					es->individuals[N].metabolism += modelo->resource_rate * pResource;
+				#else			
+					es->individuals[N].metabolism++;
+				#endif		
+						es->control=1;
 						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							#ifdef HEALTH_TRACK	
@@ -1972,8 +2011,8 @@ float NMax_Metabolic;
 							#endif
 									es->individuals[N].metabolism=0;
 									////cr =resources needed per radio increment(rate between s and r increments);
-								//	Rand2 = F_JKISS();	//if proportions are constant we could avoid this
-							//		if(Rand2<=1.0/(1.0+cr))		// taking care in tuning coagulation radio right(above).
+								//	Rand3 = F_JKISS();	//if proportions are constant we could avoid this
+							//		if(Rand3<=1.0/(1.0+cr))		// taking care in tuning coagulation radio right(above).
 									es->individuals[N].size++;
 							//		else{
 							//		es->individuals[N].radio++;
@@ -1992,7 +2031,9 @@ float NMax_Metabolic;
 								}
 								#endif			
 						}
+				#ifndef SOI		
 				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
+				#endif
 					if((((modelo->health_factor)*(modelo->growth_constant)*(es->individuals[N].size)) + es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
 					{
 						#ifdef HEALTH_TRACK
@@ -2007,7 +2048,9 @@ float NMax_Metabolic;
 							KillIndividual(es,N);
 						#endif
 					}
+				#ifndef SOI	
 				}
+				#endif
 			}
 		}
 	}	
@@ -2146,5 +2189,20 @@ float Integra(Float1D_MP *Funcion, int inicial, int final)
 	}
 	
 return Resultado;
+}
+
+float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
+{
+	float a,s1,s2,d,Area;
+	d=scale*sqrt((O.i-T.i)*(O.i-T.i) + (O.j-T.j)*(O.j-T.j));
+	if(d>(rO+rT))
+	{
+		return 0.0;
+	}
+	a=sqrt((-d+rO+rT)*(d-rO+rT)*(d+rO-rT)*(d+rO+rT))/d;
+	s1=(a + 2.0*rO)/2.0;
+	s2=(a + 2.0*rT)/2.0;
+	Area = rO*rO*asin(a/(2.0*rO))-sqrt(s1*(s1-a)*(s1-rO)*(s1-rO)) + rT*rT*asin(a/(2.0*rT))-sqrt(s2*(s2-a)*(s2-rT)*(s2-rT));
+return Area;
 }
 

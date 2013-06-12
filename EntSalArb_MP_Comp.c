@@ -60,9 +60,14 @@ file=fopen(copyFileName,"w");
 
 #ifdef EXPLICIT_RESOURCES
 fprintf(file,"Algorithm: EXPLICIT_RESOURCES\n\n");
-#else 
+#endif
+#ifdef VIRTUAL_GRID
 fprintf(file,"Algorithm: VIRTUAL RESOURCES GRID\n\n");
 #endif
+#ifdef SOI
+fprintf(file,"Algorithm: SOI\n\n");
+#endif
+
 fprintf(file,"X=%d\n",run.X);
 fprintf(file,"Y=%d\n",run.Y);
 fprintf(file,"grid_units=%f  (Area_units=units^2)\n",run.grid_units);
