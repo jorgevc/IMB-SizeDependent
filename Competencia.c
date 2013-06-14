@@ -60,9 +60,9 @@ run.Model.min_health=0;
 #endif
 
 run.Model.resource_rate=1.0;
+run.Model.growth_constant*=100;
 #ifdef SOI
 run.Model.resource_rate*=100;
-run.Model.growth_constant*=100;
 #endif
 
 run.Model.growth_constant=((Area_units/run.size_units)*3.14*4.0); // (int)>0 needed resources per unit size increse.
@@ -117,7 +117,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/12_Jun/3_SOI");
+	sprintf(contenedor,"DATOS_TAM/13_Jun/1_VG");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;

@@ -1878,7 +1878,7 @@ float NMax_Metabolic;
 			#else
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
-					es->individuals[N].metabolism--;
+					es->individuals[N].metabolism -=100;
 					es->control2=1;
 				}
 			#endif
@@ -2001,7 +2001,7 @@ float NMax_Metabolic;
 					pResource += partialArea/totalArea;
 					es->individuals[N].metabolism += modelo->resource_rate * pResource;
 				#else			
-					es->individuals[N].metabolism++;
+					es->individuals[N].metabolism +=100;
 				#endif		
 						es->control=1;
 						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
