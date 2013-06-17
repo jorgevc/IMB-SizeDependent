@@ -75,7 +75,7 @@ fprintf(file,"size_units=%f",run.size_units);
 fprintf(file,"T_max=%d\n",run.T_max);
 fprintf(file,"NoEnsambles=%d\n", run.NoEnsambles);
 
-fprintf(file,"\ncoagulation_exp=%f\n", run.Model.coagulation_exp);
+fprintf(file,"\ncoagulation_exp=%f (Proportional to the Area)\n", run.Model.coagulation_exp);
 fprintf(file,"coagulation_factor=%f  (Area_units/(Area_units)^c_exp)*factor\n", run.Model.coagulation_factor);
 
 fprintf(file,"\ncoagulation_radio_exp=%f\n", run.Model.coagulation_radio_exp);

@@ -858,10 +858,10 @@ sitio place;
 				}			
 			}
 			
-			if(es->control2==1)
-			{
-				rate[4].GrowthNo[size]++;
-			}								
+		//	if(es->control2==1)	//usar control2 y rate[4] pa lo que se necesite
+		//	{
+		//		rate[4].GrowthNo[size]++;
+		//	}								
 	}
 	
 
@@ -1874,12 +1874,11 @@ float NMax_Metabolic;
 				//}				
 			/////	
 			#ifdef SOI
-				es->individuals[N].metabolism -= 100*pMetabolic;
+				es->individuals[N].metabolism -= 100.0*pMetabolic;
 			#else
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
 					es->individuals[N].metabolism -=100;
-					es->control2=1;
 				}
 			#endif
 
@@ -1933,13 +1932,14 @@ float NMax_Metabolic;
 				EligeUniforme(i*ResourcesScale,j*ResourcesScale,radioCoa,&vecino);
 				if(vecino.i <= 0){vecino.i = NDX*ResourcesScale + vecino.i;}
 				if(vecino.j <= 0){vecino.j = NDY*ResourcesScale + vecino.j;}
-				if(vecino.i > NDX){vecino.i = vecino.i - NDX*ResourcesScale;}
-				if(vecino.j > NDY){vecino.j = vecino.j - NDY*ResourcesScale;}
+				if(vecino.i > NDX*ResourcesScale){vecino.i = vecino.i - NDX*ResourcesScale;}
+				if(vecino.j > NDY*ResourcesScale){vecino.j = vecino.j - NDY*ResourcesScale;}
 				
 				float pResource=modelo->resource_rate;
 				int ne,competingRatio;
 				sitio competingSite;
-				float d2,Oval,Xval; 
+				float d2,Oval,Xval,Rand2; 
+				
 				for(ne=0;ne < es->individuals[N].neighbours.NoMembers; ne++)
 				{
 					competingSite = es->individuals[N].neighbours.sites[ne];
@@ -1963,9 +1963,22 @@ float NMax_Metabolic;
 					}
 				}
 				
-				float Rand2 = F_JKISS();
+				Rand2 = F_JKISS();
+				//static int debug=0;
+				//int debug2 =0;
+				//if(pResource<1.0){
+				//printf("Interaction: r=%d s=%d\n",es->individuals[N].radio,es->individuals[N].size);
+				//printf("pResource: r=%f, Rand2=%f\n",pResource,Rand2);
+				//debug++;
+				//debug2=1;
+				//}
+				//if(debug==10){
+				//exit(1);
+				//}
+				
 				if(Rand2 <= pResource ) //Si hay comida como
 				{
+					
 				#endif
 				#ifdef SOI
 				int ResourcesScale = modelo->ResourcesScale;
@@ -2009,7 +2022,9 @@ float NMax_Metabolic;
 							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 							#endif
-									es->individuals[N].metabolism=0;
+							
+								es->individuals[N].metabolism -= modelo->growth_constant;
+							
 									////cr =resources needed per radio increment(rate between s and r increments);
 								//	Rand3 = F_JKISS();	//if proportions are constant we could avoid this
 							//		if(Rand3<=1.0/(1.0+cr))		// taking care in tuning coagulation radio right(above).

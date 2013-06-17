@@ -45,13 +45,16 @@ float const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units
 float const Length_units=run.grid_units*run.Model.ResourcesScale;
 #endif
 
-run.Model.coagulation_exp=1.0;  //cambiar tambien en model.c
+run.Model.coagulation_exp=0.5;  // cambiar tambien en model.c
 run.Model.coagulation_factor=(Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0; 
 run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c
 run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
 run.Model.metabolic_factor=(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
 run.Model.health_factor=0.1; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+
+run.Model.growth_constant=((Area_units/run.size_units)*0.1); // (int)>0 needed resources per unit size increse.
+
 
 #ifdef HEALTH_TRACK	
 run.Model.min_health=0;
@@ -65,7 +68,6 @@ run.Model.growth_constant*=100;
 run.Model.resource_rate*=100;
 #endif
 
-run.Model.growth_constant=((Area_units/run.size_units)*3.14*4.0); // (int)>0 needed resources per unit size increse.
 
 run.Model.birth_rate=0.0;
 run.Model.dead_rate=0.0;
@@ -117,7 +119,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/13_Jun/1_VG");
+	sprintf(contenedor,"DATOS_TAM/17_Jun/5_VG");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;

@@ -2,8 +2,8 @@
 #define M4R_MAX2 1600.0 // =4r^{2}_max
 
 //#define EXPLICIT_RESOURCES
-//#define VIRTUAL_GRID
-#define SOI
+#define VIRTUAL_GRID
+//#define SOI
 /** Contains a coordinate pair. 
  * Generaly it is used to label a site on a lattice.
 */
