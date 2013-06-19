@@ -29,7 +29,8 @@ run.Y=run.X;
 run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
 run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
-run.T_max=(run.grid_units*run.grid_units)*100000;
+//run.T_max=(run.grid_units*run.grid_units)*100000;
+run.T_max=(run.grid_units*run.grid_units)*10000;
 run.NoEnsambles=4;
 
 #ifdef EXPLICIT_RESOURCES
@@ -44,17 +45,23 @@ run.Model.competitionAsymetry = 1.0;
 float const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 float const Length_units=run.grid_units*run.Model.ResourcesScale;
 #endif
+//float coagulation_units = 1000.0;
+float coagulation_units = 1.0;
 
+//run.Model.coagulation_factor=((Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0);
+run.Model.coagulation_factor = coagulation_units*1.0;
+#ifndef SOI
+run.Model.coagulation_factor *= 3.1416;
+#endif
 run.Model.coagulation_exp=0.5;  // cambiar tambien en model.c
-run.Model.coagulation_factor=(Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0; 
 run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c
 run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
-run.Model.metabolic_factor=(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
+run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
 run.Model.health_factor=0.1; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 
-run.Model.growth_constant=((Area_units/run.size_units)*0.1); // (int)>0 needed resources per unit size increse.
-
+run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.1); // (int)>0 needed resources per unit size increse.
+run.Model.resource_rate=1.0;
 
 #ifdef HEALTH_TRACK	
 run.Model.min_health=0;
@@ -62,18 +69,13 @@ run.Model.min_health=0;
 run.Model.min_health=0;
 #endif
 
-run.Model.resource_rate=1.0;
-run.Model.growth_constant*=100;
-#ifdef SOI
-run.Model.resource_rate*=100;
-#endif
-
 
 run.Model.birth_rate=0.0;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
 
-int const write_interval=(run.grid_units*run.grid_units)*5000;
+//int const write_interval=(run.grid_units*run.grid_units)*5000;
+int const write_interval=(run.grid_units*run.grid_units)*1000;
 int const separation=run.grid_units*10;
 ////
 int T_max = run.T_max;
@@ -83,12 +85,14 @@ int NoEnsambles=run.NoEnsambles;
 model modelo;
 modelo = run.Model;
 
+
 Individual indv;
 indv.species=1;
 indv.size=run.size_units*2;
-indv.radio=run.grid_units*1; 
+indv.radio=R(indv, (&modelo));
 indv.metabolism=0;
-indv.health=0;
+indv.health=0; 
+
 
 int NDX=(run.X*run.grid_units)+1;
 int NDY=(run.Y*run.grid_units)+1;
@@ -119,7 +123,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/17_Jun/5_VG");
+	sprintf(contenedor,"DATOS_TAM/19_Jun/2_VG");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -226,6 +230,7 @@ FILE *file;
 		
 		//char prefix[10];
 		//int i;
+		
 		for(i=1;i<=T_max;i++)
 		{		
 			

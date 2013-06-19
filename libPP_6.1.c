@@ -10,7 +10,6 @@ Copyright 2012 Jorge Velazquez
 #include "GNA.h"
 #include "libPP_6.1.h"
 
-#include "model.c"
 
 especie *parametros=NULL;
 static float Max_Metabolic=0.0;
@@ -1091,7 +1090,7 @@ void setMaxMetabolic(estado *es, model *modelo)
 		Birth=modelo->birth_rate;
 		CoagulationIntra=modelo->intra_coagulation;
 		////Funcion k(s)
-		Coagulation1 = modelo->coagulation_factor * ((float)(es->individuals[N].size) + (modelo->health_factor)*(float)(es->individuals[N].size*es->individuals[N].health));
+		Coagulation1 = K(es->individuals[N], modelo);
 		////
 	NMax_Metabolic = Birth + Dead + Coagulation1 + CoagulationIntra;
 		if(Max < NMax_Metabolic)
@@ -1874,11 +1873,11 @@ float NMax_Metabolic;
 				//}				
 			/////	
 			#ifdef SOI
-				es->individuals[N].metabolism -= 100.0*pMetabolic;
+				es->individuals[N].metabolism -= pMetabolic;
 			#else
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
-					es->individuals[N].metabolism -=100;
+					es->individuals[N].metabolism -=1;
 				}
 			#endif
 
@@ -1911,6 +1910,7 @@ float NMax_Metabolic;
 		}else{ //como o nada
 			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
 			{	
+				
 				//es->individuals[N].radio=modelo->coagulation_radio_factor*sqrtf((float)(es->individuals[N].size)); //ratio between radio and size of individual
 				es->individuals[N].radio=R(es->individuals[N],modelo);
 				
@@ -1982,7 +1982,7 @@ float NMax_Metabolic;
 				#endif
 				#ifdef SOI
 				int ResourcesScale = modelo->ResourcesScale;
-				float pResource=0.0;
+				float Resource=0.0;
 				int ne,competingRatio;
 				sitio competingSite;
 				float d2, overlapArea,Oval,Xval,totalArea,partialArea;
@@ -2006,17 +2006,18 @@ float NMax_Metabolic;
 						{
 							Oval=pow((float)es->individuals[N].size , modelo->competitionAsymetry);
 							Xval=pow((float)es->individuals[es->INDICE[competingSite.i][competingSite.j]].size, modelo->competitionAsymetry);
-							pResource += (Oval/(Oval + Xval))*(overlapArea/totalArea);
+							Resource += (Oval/(Oval + Xval))*(overlapArea);
 							partialArea -= overlapArea; 
 						}
 					}
 				}
-					pResource += partialArea/totalArea;
-					es->individuals[N].metabolism += modelo->resource_rate * pResource;
+					Resource += partialArea;
+					es->individuals[N].metabolism += modelo->resource_rate * Resource;
 				#else			
-					es->individuals[N].metabolism +=100;
+					es->individuals[N].metabolism +=1;
 				#endif		
 						es->control=1;
+						
 						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							#ifdef HEALTH_TRACK	

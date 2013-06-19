@@ -4,6 +4,9 @@
 //#define EXPLICIT_RESOURCES
 #define VIRTUAL_GRID
 //#define SOI
+
+#include "model.c"
+
 /** Contains a coordinate pair. 
  * Generaly it is used to label a site on a lattice.
 */
