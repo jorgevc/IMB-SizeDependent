@@ -1,9 +1,9 @@
 
 #define M4R_MAX2 1600.0 // =4r^{2}_max
 
-//#define EXPLICIT_RESOURCES
-#define VIRTUAL_GRID
-//#define SOI
+
+//#define VIRTUAL_GRID
+#define SOI
 
 #include "model.c"
 
@@ -57,14 +57,13 @@ int **INDICE;		/**< A 2 dimensional array which value at INDICE[i][j] is the ind
 						of the occupied sites. If (i,j) is not occupyed the return value is undetermined. */
 sitio *SO;			/**< A 1 dimensional array of scructs sitio that is a list of the occupied sites. 
 						To find the index of an specific occupied site at (i,j) in this list, one have to look for it in INDICE[i][j]. */
-float Meta_T;
-float Max_Metabolic;
-float units;
-float size_units;
+double Meta_T;
+double Max_Metabolic;
+double units;
+double size_units;
 Individual *individuals;
 int control;
 int control2;
-
 } estado;
 
 /** General porpuse 2 dimensinal array of float suitable to be used for ensemble averages. */
@@ -116,22 +115,22 @@ int on;
 } Grupo;
 
 typedef struct {
-float dead_rate;
-float birth_rate;
-float intra_coagulation;
-float coagulation_factor;
-float coagulation_exp;
-float metabolic_factor;
-float coagulation_radio_exp;
-float coagulation_radio_factor;
-float metabolic_exp;
-float health_factor;
-float resource_rate;
+double dead_rate;
+double birth_rate;
+double intra_coagulation;
+double coagulation_factor;
+double coagulation_exp;
+double metabolic_factor;
+double coagulation_radio_exp;
+double coagulation_radio_factor;
+double metabolic_exp;
+double health_factor;
+double resource_rate;
 int ResourcesScale;
-float competitionAsymetry;
+double competitionAsymetry;
 int min_health;
 int growth_constant;
-float (*coagulationFuntion)(Individual *);
+double (*coagulationFuntion)(Individual *);
 } model;
 
 typedef struct {
@@ -153,8 +152,8 @@ typedef struct {
 	int X;
 	int Y;
 	int NoEnsambles;
-	float grid_units;
-	float size_units;
+	double grid_units;
+	double size_units;
 	int T_max;
 	model Model;
 } runDescriptor;
@@ -324,9 +323,9 @@ void IniciaMemoriaInt2D_MP(Int2D_MP *ARRAY);
  * @see Dist_MP
  */
 void IniciaMemoriaDist_MP(Dist_MP *Dist);
-void GeneraEstadoAleatorioTamano(estado *es, float frac, int tipo, int tamano);
+void GeneraEstadoAleatorioTamano(estado *es, float frac, Individual indv);
 void ActualizaRyCTamano(estado *es, int N, int campo);
-void BarrMCcRyCampTamano(estado *es, float flujo_recursos, model *param, Rate_log *rate);
+void BarrMCcRyCampTamano(estado *es, double flujo_recursos, model *param, Rate_log *rate);
 void ActualizaDistTamano_MP(estado *e, Float1D_MP *TamDist, char Opcion);
 void ActualizaRecursos_MP(estado *es,Float2D_MP *RhoVsT);
 void ActualizaUniv(estado *es, int N, model *modelo);
@@ -499,3 +498,5 @@ void InitRate_log(Rate_log *rate,const int Size);
 void FreeRate_log(Rate_log *rate);
 
 float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale);
+
+void FilterMinDistance(estado *es,int min_distance);
