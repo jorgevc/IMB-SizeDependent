@@ -148,6 +148,7 @@ int i_max;
 int *NoEnsambles;
 } Rate_log;
 
+
 typedef struct {
 	int X;
 	int Y;
@@ -495,6 +496,7 @@ void LiberaMemoriaFloat1D_MP(Float1D_MP *Objeto);
 void CFFT_Univ_MP(estado *es, CorrDescriptor *Especifica, Float2D_MP *correlacion, Grupo *TipoOrigen, Grupo *TipoDestino);
 
 void InitRate_log(Rate_log *rate,const int Size);
+void SumRate_log(Rate_log *origin, Rate_log *target);
 void FreeRate_log(Rate_log *rate);
 
 float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale);

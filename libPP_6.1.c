@@ -884,30 +884,30 @@ sitio place;
 
 	for(size=1;size<=rate[0].i_max;size++)
 	{
-		if(rate[0].TotalNo[size]>=MCsweep)
+		if(rate[0].TotalNo[size]>9)
 		{
-			rate[0].Growth[size]+=((float)rate[0].GrowthNo[size]/(float)rate[0].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[0].NoEnsambles[size]++;
+			rate[0].Growth[size]+=((float)rate[0].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[0].NoEnsambles[size]+=rate[0].TotalNo[size];
 		}
-		if(rate[1].TotalNo[size]>=MCsweep)
+		if(rate[1].TotalNo[size]>9)
 		{
-			rate[1].Growth[size]+=((float)rate[1].GrowthNo[size]/(float)rate[1].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[1].NoEnsambles[size]++;
+			rate[1].Growth[size]+=((float)rate[1].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[1].NoEnsambles[size]+=rate[1].TotalNo[size];
 		}
-		if(rate[2].TotalNo[size]>=MCsweep)
+		if(rate[2].TotalNo[size]>9)
 		{
-			rate[2].Growth[size]+=((float)rate[2].GrowthNo[size]/(float)rate[2].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[2].NoEnsambles[size]++;
+			rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[2].NoEnsambles[size]+=rate[2].TotalNo[size];
 		}
-		if(rate[3].TotalNo[size]>=MCsweep)
+		if(rate[3].TotalNo[size]>9)
 		{
-			rate[3].Growth[size]+=((float)rate[3].GrowthNo[size]/(float)rate[3].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[3].NoEnsambles[size]++;
+			rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[3].NoEnsambles[size]+=rate[3].TotalNo[size];
 		}		
-		if(rate[4].TotalNo[size]>=MCsweep)
+		if(rate[4].TotalNo[size]>9)
 		{
-			rate[4].Growth[size]+=((float)rate[4].GrowthNo[size]/(float)rate[4].TotalNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[4].NoEnsambles[size]++;
+			rate[4].Growth[size]+=((float)rate[4].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+			rate[4].NoEnsambles[size]+=rate[4].TotalNo[size];
 		}	
 	}
 
@@ -2095,6 +2095,24 @@ void InitRate_log(Rate_log *rate,const int Size)
 		
 	rate->GrowthNo=(int *)calloc(Size+1, sizeof(int));
 	rate->TotalNo=(int *)calloc(Size+1, sizeof(int));
+return;
+}
+
+void SumRate_log(Rate_log *origin, Rate_log *target)
+{
+	if(target->i_max >= origin->i_max)
+	{
+		unsigned int i;
+		for(i=0; i<=(origin->i_max); i++)
+		{
+			#pragma omp atomic
+			target->Growth[i]+=origin->Growth[i];
+			#pragma omp atomic
+			target->NoEnsambles[i]+=origin->NoEnsambles[i];
+		}
+	}else{
+		printf("Not able to copy longer Rate_log to smaller one!\n");
+	}
 return;
 }
 

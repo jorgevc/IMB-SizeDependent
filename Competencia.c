@@ -119,7 +119,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/26_Jun/21_SOI");
+	sprintf(contenedor,"DATOS_TAM/27_Jun/3_SOI");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -130,6 +130,8 @@ Float1D_MP meanSize;
 	
 float time_map[T_max+10];
 time_map[0]=0.0;
+
+Rate_log Grate[5];
 
 FILE *file;
 
@@ -212,7 +214,6 @@ FILE *file;
 			
 	//////////////////////////////Barrido Monte CARLO:
 		char distT[50];
-		
 		Rate_log rate[5];
 		int MaximoTamanoIni = 100;
 		InitRate_log(&rate[0],MaximoTamanoIni);
@@ -220,11 +221,6 @@ FILE *file;
 		InitRate_log(&rate[2],MaximoTamanoIni);
 		InitRate_log(&rate[3],MaximoTamanoIni);
 		InitRate_log(&rate[4],MaximoTamanoIni);
-		FILE *taza;
-		int r;
-		
-		//char prefix[10];
-		//int i;
 		
 		for(i=1;i<=T_max;i++)
 		{		
@@ -244,7 +240,6 @@ FILE *file;
 			#pragma omp master
 			{
 				time_map[e[0].T]=e[0].Meta_T;
-		//		ActualizaRecursos_MP(&e[0],&MP_RhoVsT);
 			}
 			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
@@ -272,38 +267,29 @@ FILE *file;
 		}
 		
 	//////////////////////////////Termina Monte CARLO
-	#pragma omp barrier
+
 	#pragma omp single
 	{
-		sprintf(distT,"%s/GrowthR",contenedor,i);
-		taza=fopen(distT, "w");						
-		for(r=1;r<=rate[0].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*rate[0].Growth[r]/((double)rate[0].NoEnsambles[r]));
-		}
-		fclose(taza);
-		
-		sprintf(distT,"%s/DeadR",contenedor,i);
-		taza=fopen(distT, "w");
-		for(r=1;r<=rate[1].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, rate[1].Growth[r]/((float)rate[1].NoEnsambles[r]));
-		}
-		fclose(taza);
-		
-		sprintf(distT,"%s/ResourceR",contenedor,i);
-		taza=fopen(distT, "w");
-		for(r=1;r<=rate[2].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s,delta_s*rate[2].Growth[r]/((float)rate[2].NoEnsambles[r]));
-		}
-		fclose(taza);
-		
-		sprintf(distT,"%s/MetabolicR",contenedor,i);
-		taza=fopen(distT, "w");
-		for(r=1;r<=rate[3].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*rate[3].Growth[r]/((float)rate[3].NoEnsambles[r]));
-		}
-		fclose(taza);
-	
+		int Max = rate[0].i_max;
+		InitRate_log(&Grate[0],Max);
+		InitRate_log(&Grate[1],Max);
+		InitRate_log(&Grate[2],Max);
+		InitRate_log(&Grate[3],Max);
+		InitRate_log(&Grate[4],Max);
 	}
+
+	SumRate_log(&rate[0], &Grate[0]);
+	SumRate_log(&rate[1], &Grate[1]);
+	SumRate_log(&rate[2], &Grate[2]);
+	SumRate_log(&rate[3], &Grate[3]);
+	SumRate_log(&rate[4], &Grate[4]);
+	
+	FreeRate_log(&rate[0]);
+	FreeRate_log(&rate[1]);
+	FreeRate_log(&rate[2]);
+	FreeRate_log(&rate[3]);
+	FreeRate_log(&rate[4]);
+	
 	//	#pragma omp master
 	//	{
 	//	SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
@@ -318,6 +304,45 @@ FILE *file;
 		LiberaMemoriaFloat2D_MP(&MP_RhoVsT);
 	}	/////TERMINA PARALLEL
 
+// Write Rate
+FILE *taza;
+int r;
+char distT[50];
+		sprintf(distT,"%s/GrowthR",contenedor);
+		taza=fopen(distT, "w");						
+		for(r=1;r<=Grate[0].i_max;r++){
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[0].Growth[r]/((double)Grate[0].NoEnsambles[r]));
+		}
+		fclose(taza);
+		
+		sprintf(distT,"%s/DeadR",contenedor);
+		taza=fopen(distT, "w");
+		for(r=1;r<=Grate[1].i_max;r++){
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, Grate[1].Growth[r]/((float)Grate[1].NoEnsambles[r]));
+		}
+		fclose(taza);
+		
+		sprintf(distT,"%s/ResourceR",contenedor);
+		taza=fopen(distT, "w");
+		for(r=1;r<=Grate[2].i_max;r++){
+			fprintf(taza,"%f %f\n",((float)r)*delta_s,delta_s*Grate[2].Growth[r]/((float)Grate[2].NoEnsambles[r]));
+		}
+		fclose(taza);
+		
+		sprintf(distT,"%s/MetabolicR",contenedor);
+		taza=fopen(distT, "w");
+		for(r=1;r<=Grate[3].i_max;r++){
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[3].Growth[r]/((float)Grate[3].NoEnsambles[r]));
+		}
+fclose(taza);
+FreeRate_log(&Grate[0]);
+FreeRate_log(&Grate[1]);
+FreeRate_log(&Grate[2]);
+FreeRate_log(&Grate[3]);
+FreeRate_log(&Grate[4]);
+
+////
+
 //GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
 LiberaMemoriaFloat2D_MP(&MP_RhoVsT_1);
 LiberaMemoriaFloat1D_MP(&TamDist_1);
@@ -326,7 +351,7 @@ char thinning[50];
 sprintf(thinning,"%s/thinning",contenedor);
 file=fopen(thinning, "w");
 fputs("# T meanSize meanDensity fisicalTime\n",file);
-int r;
+
 for(r=1;r<=T_max;r++){
 fprintf(file,"%d %f %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles, time_map[r]);
 }
