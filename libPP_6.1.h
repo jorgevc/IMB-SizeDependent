@@ -117,6 +117,7 @@ int on;
 typedef struct {
 double dead_rate;
 double birth_rate;
+int RadioBirth;
 double intra_coagulation;
 double coagulation_factor;
 double coagulation_exp;

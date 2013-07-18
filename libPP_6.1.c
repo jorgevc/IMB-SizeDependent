@@ -299,6 +299,7 @@ int InsertIndividualAt(estado *es,int i,int j,Individual individual,int overWrit
 		if(es->individuals)
 		{
 			individual.neighbours.NoMembers = 0;
+			individual.neighbours.sites=NULL;
 			es->individuals[es->ON]=individual;
 		
 			double d2;
@@ -673,8 +674,6 @@ Libres=((NDX * NDY) - (es->ON))-N;
 				}
 			}
 		}
-		
-	
 	
 return;
 }
@@ -854,24 +853,16 @@ sitio place;
 			rate[1].TotalNo[size]++;	
 			rate[2].TotalNo[size]++;
 			rate[3].TotalNo[size]++;
-			rate[4].TotalNo[size]++;
+			
 				ActualizaUniv(es, Indice, param);
+			
 			if(es->ON==(on-1)){
-				rate[1].GrowthNo[size]++;
-			}else{
-				if(es->control==1)
-				{
-					rate[2].GrowthNo[size]++;
-					if((size+1)==es->individuals[Indice].size)
-					{		
-						rate[0].GrowthNo[size]++;
-					}else{				
-							if(meta == es->individuals[Indice].metabolism || meta < 0)
-							{
-								rate[3].GrowthNo[size]++;
-							}
-					}
-				}			
+					rate[1].GrowthNo[size]++;
+			}else{		
+					rate[0].GrowthNo[size]+=(es->individuals[Indice].size - size);
+					rate[2].GrowthNo[size]+=es->control;
+					rate[3].GrowthNo[size]+=es->control2;
+					rate[4].GrowthNo[es->T]+=es->control;			
 			}
 			
 		//	if(es->control2==1)	//usar control2 y rate[4] pa lo que se necesite
@@ -881,7 +872,6 @@ sitio place;
 						
 	}
 	
-
 	for(size=1;size<=rate[0].i_max;size++)
 	{
 		if(rate[0].TotalNo[size]>9)
@@ -904,13 +894,11 @@ sitio place;
 			rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
 			rate[3].NoEnsambles[size]+=rate[3].TotalNo[size];
 		}		
-		if(rate[4].TotalNo[size]>9)
-		{
-			rate[4].Growth[size]+=((float)rate[4].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[4].NoEnsambles[size]+=rate[4].TotalNo[size];
-		}	
 	}
 
+		rate[4].Growth[es->T]+=((float)rate[4].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+		rate[4].NoEnsambles[es->T]++;
+		
 (es->T)++;
 es->Meta_T=TMetabolicActual;
 
@@ -1029,10 +1017,11 @@ memset(rhoVec,0,tot * sizeof(int));
 					if(n>TamDist->i_max)
 					{
 						fprintf(stdout,"Tamanos mayores que lo que La distribucion puede guardar. Checar funcion ActualizaDistTamano_MP para encontrar el error");
-						exit(0);
-					}
+						
+					}else{
 					#pragma omp atomic
-					TamDist->array[n]+=prob_tam; 
+					TamDist->array[n]+=prob_tam;
+					}
 				}
 		}
 		
@@ -1868,7 +1857,7 @@ float NMax_Metabolic;
 	Rand = F_JKISS();
 
 	Dead=0.0;
-	Birth=0.0;
+	Birth=modelo->birth_rate;
 	CoagulationIntra=0.0;
 
 //Funcion k(s,r,m):
@@ -1893,10 +1882,12 @@ float NMax_Metabolic;
 			/////	
 			#ifdef SOI
 				es->individuals[N].metabolism -= pMetabolic;
+				es->control2 = pMetabolic;
 			#else
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
 					es->individuals[N].metabolism -=1;
+					es->control2 = 1;
 				}
 			#endif
 
@@ -1910,7 +1901,7 @@ float NMax_Metabolic;
 	}else{  //creation o coagulacion o nada
 		if(Rand<=(pDead + pCreacion)) //creation
 		{
-			radioCre=parametros[es->individuals[N].species].RadioBirth;
+			radioCre=modelo->RadioBirth;
 			EligeUniforme(i,j,radioCre,&vecino);
 			
 			if(vecino.i <= 0){vecino.i = NDX + vecino.i;}
@@ -1918,26 +1909,28 @@ float NMax_Metabolic;
 			if(vecino.i > NDX){vecino.i = vecino.i - NDX;}
 			if(vecino.j > NDY){vecino.j = vecino.j - NDY;}   //NOTA: Peligro de segmentation fault si el radio es mayor al lado de la maya	
 			
-				Individual indiv;
-				indiv.size=1;
-				indiv.species=es->individuals[N].species;
-				indiv.radio=1;
-				indiv.metabolism=0;
+				Individual indv;
+				indv.species=1;
+				indv.size=2;
+				indv.radio=R(indv, modelo);
+				indv.metabolism=0;
+				indv.health=0; 
 				
-				InsertIndividualAt(es,vecino.i,vecino.j,indiv,0);
+				InsertIndividualAt(es,vecino.i,vecino.j,indv,0);
 					
 		}else{ //como o nada
 			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
 			{			
 				//es->individuals[N].radio=modelo->coagulation_radio_factor*sqrtf((float)(es->individuals[N].size)); //ratio between radio and size of individual
 				es->individuals[N].radio=R(es->individuals[N],modelo);
-				double pResource=modelo->resource_rate;
 				int ResourcesScale = modelo->ResourcesScale;
 				double Oval,Xval,Rand2;
 				sitio competingSite;
 				int ne,competingRatio;
+				Rand2 = F_JKISS();
 				
-				#ifdef VIRTUAL_GRID	
+				#ifdef VIRTUAL_GRID
+				double pResource=modelo->resource_rate;
 				radioCoa=es->individuals[N].radio;
 				EligeUniforme(i*ResourcesScale,j*ResourcesScale,radioCoa,&vecino);
 				if(vecino.i <= 0){vecino.i = NDX*ResourcesScale + vecino.i;}
@@ -1969,13 +1962,11 @@ float NMax_Metabolic;
 						}			
 					}
 				}
-				
-				#endif
-				
-				Rand2 = F_JKISS();
-				
+					
 				if(Rand2 <= pResource ) //Si hay comida como
 				{
+				
+				#endif
 					
 				#ifdef SOI
 				double Resource=0.0;		
@@ -2006,8 +1997,9 @@ float NMax_Metabolic;
 					}
 				}
 					Resource += partialArea;
+					Resource *= (modelo->resource_rate + 0.05*Rand2);
 					es->individuals[N].metabolism += Resource;
-					
+					es->control=Resource;
 					//#pragma omp master
 					//{
 					//printf("pMeta=%f\n",pMetabolic);
@@ -2016,16 +2008,17 @@ float NMax_Metabolic;
 					//}
 				#else			
 					es->individuals[N].metabolism +=1;
+					es->control=1;
 				#endif		
-						es->control=1;
-						
+								
 						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 							#endif
-							
+								es->individuals[N].size+=es->individuals[N].metabolism/modelo->growth_constant; 
 								es->individuals[N].metabolism = 0;
+								es->control2=1;
 								//#pragma omp master
 								//{
 							//printf("Meta2= %d \n", es->individuals[N].metabolism);
@@ -2033,7 +2026,7 @@ float NMax_Metabolic;
 									////cr =resources needed per radio increment(rate between s and r increments);
 								//	Rand3 = F_JKISS();	//if proportions are constant we could avoid this
 							//		if(Rand3<=1.0/(1.0+cr))		// taking care in tuning coagulation radio right(above).
-									es->individuals[N].size++;
+							//		es->individuals[N].size++;
 							//		else{
 							//		es->individuals[N].radio++;
 							//		}
@@ -2051,9 +2044,7 @@ float NMax_Metabolic;
 								}
 								#endif			
 						}
-				#ifdef SOI
-				}
-				#else		
+				#ifdef VIRTUAL_GRID	
 				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
 				#endif
 					//if((((modelo->health_factor)*(modelo->growth_constant)*(es->individuals[N].size)) + es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
@@ -2071,7 +2062,7 @@ float NMax_Metabolic;
 							KillIndividual(es,N);
 						#endif
 					}
-				#ifndef SOI
+				#ifdef VIRTUAL_GRID
 				}
 				#endif
 			}

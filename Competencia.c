@@ -26,9 +26,9 @@ run.Y=run.X;
 run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
 run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
-//run.T_max=(run.grid_units*run.grid_units)*100000;
+//run.T_max=(run.grid_units*run.grid_units)*10000;
 //run.T_max=(run.grid_units*run.grid_units)*35000;
-run.T_max=(run.grid_units*run.grid_units)*10000;
+run.T_max=(run.grid_units*run.grid_units)*15000;
 run.NoEnsambles=20;
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
@@ -39,7 +39,7 @@ double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
 double coagulation_units = 1.0;
 #ifdef SOI
-coagulation_units = 3500.0;
+coagulation_units = 3000.0;
 run.Model.coagulation_factor = coagulation_units*1.0;
 #else
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
@@ -52,10 +52,10 @@ run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
 run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
 
-run.Model.health_factor=0.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
-run.Model.resource_rate=1.0; // morir por vejez
+run.Model.resource_rate=0.9; // morir por vejez
 //run.Model.resource_rate=0.95;
 
 #ifdef HEALTH_TRACK	
@@ -65,14 +65,14 @@ run.Model.min_health=0;
 #endif
 
 
-run.Model.birth_rate=0.0;
+run.Model.birth_rate=0.1;
+run.Model.RadioBirth=10;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
 
-//int const write_interval=(run.grid_units*run.grid_units)*5000;
 int const write_interval=(run.grid_units*run.grid_units)*200;
-int const separation=run.grid_units*10;
-
+int const separation=run.grid_units*3;
+//int const separation=run.grid_units*10;
 ////
 int T_max = run.T_max;
 int NoEnsambles=run.NoEnsambles;
@@ -119,7 +119,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/27_Jun/3_SOI");
+	sprintf(contenedor,"DATOS_TAM/18_Jul/3_SOI");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -168,8 +168,8 @@ FILE *file;
 			
 		int i,j;
 			for(Par=0;Par<MaxPar;Par++)
-			{			
-			GeneraEstadoAleatorioTamano(&e[Par], 0.08, indv);
+			{		
+			GeneraEstadoAleatorioTamano(&e[Par], 0.08, indv);		
 			FilterMinDistance(&e[Par], separation);
 			
 		//		for(i=separation;i<NDX;i+=separation)
@@ -181,6 +181,7 @@ FILE *file;
 				//}
 			
 			setMaxMetabolic(&e[Par],&modelo);
+			
 			}
 
 		
@@ -191,7 +192,7 @@ FILE *file;
 				InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano, MaxPar);
 
 		Float1D_MP TamDist;
-		InicializaFloat1D_MP(&TamDist, T_max+10);
+		InicializaFloat1D_MP(&TamDist, T_max+100);
 		//Dist_MP MP_RhoDist;
 		//	InicializaDist_MP(&MP_RhoDist, TamParticion);
 			
@@ -325,16 +326,24 @@ char distT[50];
 		sprintf(distT,"%s/ResourceR",contenedor);
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[2].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s,delta_s*Grate[2].Growth[r]/((float)Grate[2].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s,delta_s*Grate[2].Growth[r]/(coagulation_units*(float)Grate[2].NoEnsambles[r]));
 		}
 		fclose(taza);
 		
 		sprintf(distT,"%s/MetabolicR",contenedor);
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[3].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[3].Growth[r]/((float)Grate[3].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[3].Growth[r]/(coagulation_units*(float)Grate[3].NoEnsambles[r]));
 		}
-fclose(taza);
+		fclose(taza);
+		
+		sprintf(distT,"%s/TotalResourceR",contenedor);
+		taza=fopen(distT, "w");
+		for(r=1;r<=Grate[4].i_max;r++){
+			fprintf(taza,"%d %f\n",r, Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]));
+		}
+		fclose(taza);
+		
 FreeRate_log(&Grate[0]);
 FreeRate_log(&Grate[1]);
 FreeRate_log(&Grate[2]);
