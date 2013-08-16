@@ -28,7 +28,7 @@ run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica
 
 //run.T_max=(run.grid_units*run.grid_units)*10000;
 //run.T_max=(run.grid_units*run.grid_units)*35000;
-run.T_max=(run.grid_units*run.grid_units)*15000;
+run.T_max=(run.grid_units*run.grid_units)*20000;
 run.NoEnsambles=20;
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
@@ -46,12 +46,12 @@ run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 #endif
 //run.Model.coagulation_factor=((Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0);
 
-run.Model.coagulation_exp=0.5;  // cambiar tambien en model.c
-run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c
+run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c  :0.375
+run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp;  // cambiar tambien en model.c
 run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
 run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
-
+// 0.2 anterior 1.25
 run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
@@ -65,7 +65,8 @@ run.Model.min_health=0;
 #endif
 
 
-run.Model.birth_rate=0.1;
+//run.Model.birth_rate=0.5;
+run.Model.birth_rate=0.0;
 run.Model.RadioBirth=10;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
@@ -119,7 +120,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/18_Jul/3_SOI");
+	sprintf(contenedor,"DATOS_TAM/1_Aug/1_SOI_NoMuerenDisminuyenTamano");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -271,12 +272,11 @@ FILE *file;
 
 	#pragma omp single
 	{
-		int Max = rate[0].i_max;
-		InitRate_log(&Grate[0],Max);
-		InitRate_log(&Grate[1],Max);
-		InitRate_log(&Grate[2],Max);
-		InitRate_log(&Grate[3],Max);
-		InitRate_log(&Grate[4],Max);
+		InitRate_log(&Grate[0],rate[0].i_max);
+		InitRate_log(&Grate[1],rate[1].i_max);
+		InitRate_log(&Grate[2],rate[2].i_max);
+		InitRate_log(&Grate[3],rate[3].i_max);
+		InitRate_log(&Grate[4],rate[4].i_max);
 	}
 
 	SumRate_log(&rate[0], &Grate[0]);
@@ -326,7 +326,7 @@ char distT[50];
 		sprintf(distT,"%s/ResourceR",contenedor);
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[2].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s,delta_s*Grate[2].Growth[r]/(coagulation_units*(float)Grate[2].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[2].Growth[r]/(coagulation_units*(float)Grate[2].NoEnsambles[r]));
 		}
 		fclose(taza);
 		
@@ -337,18 +337,17 @@ char distT[50];
 		}
 		fclose(taza);
 		
-		sprintf(distT,"%s/TotalResourceR",contenedor);
-		taza=fopen(distT, "w");
-		for(r=1;r<=Grate[4].i_max;r++){
-			fprintf(taza,"%d %f\n",r, Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]));
-		}
-		fclose(taza);
+		//sprintf(distT,"%s/TotalResourceR",contenedor);
+		//taza=fopen(distT, "w");
+		//for(r=1;r<=Grate[4].i_max;r++){
+			//fprintf(taza,"%d %f\n",r, Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]));
+		//}
+		//fclose(taza);
 		
 FreeRate_log(&Grate[0]);
 FreeRate_log(&Grate[1]);
 FreeRate_log(&Grate[2]);
 FreeRate_log(&Grate[3]);
-FreeRate_log(&Grate[4]);
 
 ////
 
@@ -362,9 +361,10 @@ file=fopen(thinning, "w");
 fputs("# T meanSize meanDensity fisicalTime\n",file);
 
 for(r=1;r<=T_max;r++){
-fprintf(file,"%d %f %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles, time_map[r]);
+fprintf(file,"%d %f %f %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles, time_map[r], Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]) );
 }
 fclose(file);
 
+FreeRate_log(&Grate[4]);
 return;
 }

@@ -93,6 +93,10 @@ fprintf(file,"\nresource_rate=%f\n", run.Model.resource_rate);
 fprintf(file,"ResourcesScale=%f\n", run.Model.ResourcesScale);
 fprintf(file,"competitionAsymetry=%f\n", run.Model.competitionAsymetry);
 
+fprintf(file,"\nbirth_rate=%f\n",run.Model.birth_rate);
+fprintf(file,"RadioBirth=%d\n",run.Model.RadioBirth);
+fprintf(file,"dead_rate=%f (intrinsic dead rate)\n", run.Model.dead_rate);
+
 fclose(file);
 	
 fprintf(stdout,"\nlisto creando contenedor!\n");

@@ -824,6 +824,11 @@ sitio place;
 	memset(rate[3].TotalNo,0,rate[3].i_max * sizeof(int));
 	memset(rate[4].GrowthNo,0,rate[4].i_max * sizeof(int)); 
 	memset(rate[4].TotalNo,0,rate[4].i_max * sizeof(int));
+	
+	if(es->T == rate[4].i_max)
+	{
+		ReallocRate_log(&rate[4], 50);
+	}
 ////////// END rate internals
 
 	TEnteroAnterior = floor(es->Meta_T);
@@ -844,8 +849,7 @@ sitio place;
 				ReallocRate_log(&rate[0], 50);
 				ReallocRate_log(&rate[1], 50);
 				ReallocRate_log(&rate[2], 50);
-				ReallocRate_log(&rate[3], 50);
-				ReallocRate_log(&rate[4], 50);
+				ReallocRate_log(&rate[3], 50);	
 			}
 				
 			place=es->SO[Indice];	
@@ -872,31 +876,34 @@ sitio place;
 						
 	}
 	
-	for(size=1;size<=rate[0].i_max;size++)
-	{
-		if(rate[0].TotalNo[size]>9)
+	//if(es->T > 10000)
+	//{
+		for(size=1;size<=rate[0].i_max;size++)
 		{
-			rate[0].Growth[size]+=((float)rate[0].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[0].NoEnsambles[size]+=rate[0].TotalNo[size];
+			if(rate[0].TotalNo[size]>9)
+			{
+				rate[0].Growth[size]+=((float)rate[0].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[0].NoEnsambles[size]+=rate[0].TotalNo[size];
+			}
+			if(rate[1].TotalNo[size]>9)
+			{
+				rate[1].Growth[size]+=((float)rate[1].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[1].NoEnsambles[size]+=rate[1].TotalNo[size];
+			}
+			if(rate[2].TotalNo[size]>9)
+			{
+				rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[2].NoEnsambles[size]+=rate[2].TotalNo[size];
+			}
+			if(rate[3].TotalNo[size]>9)
+			{
+				rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[3].NoEnsambles[size]+=rate[3].TotalNo[size];
+			}		
 		}
-		if(rate[1].TotalNo[size]>9)
-		{
-			rate[1].Growth[size]+=((float)rate[1].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[1].NoEnsambles[size]+=rate[1].TotalNo[size];
-		}
-		if(rate[2].TotalNo[size]>9)
-		{
-			rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[2].NoEnsambles[size]+=rate[2].TotalNo[size];
-		}
-		if(rate[3].TotalNo[size]>9)
-		{
-			rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
-			rate[3].NoEnsambles[size]+=rate[3].TotalNo[size];
-		}		
-	}
+	//}
 
-		rate[4].Growth[es->T]+=((float)rate[4].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+		rate[4].Growth[es->T]+=((float)rate[4].GrowthNo[es->T])/(TMetabolicActual - TMetabolicIni);
 		rate[4].NoEnsambles[es->T]++;
 		
 (es->T)++;
@@ -1857,7 +1864,12 @@ float NMax_Metabolic;
 	Rand = F_JKISS();
 
 	Dead=0.0;
-	Birth=modelo->birth_rate;
+	if(es->individuals[N].radio > 3)
+	{
+		Birth=modelo->birth_rate;
+	}else{
+		Birth=0;
+	}
 	CoagulationIntra=0.0;
 
 //Funcion k(s,r,m):
@@ -1997,7 +2009,7 @@ float NMax_Metabolic;
 					}
 				}
 					Resource += partialArea;
-					Resource *= (modelo->resource_rate + 0.05*Rand2);
+					Resource *= (modelo->resource_rate); //+ 0.05*Rand2);
 					es->individuals[N].metabolism += Resource;
 					es->control=Resource;
 					//#pragma omp master
@@ -2011,14 +2023,13 @@ float NMax_Metabolic;
 					es->control=1;
 				#endif		
 								
-						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
+						if(abs(es->individuals[N].metabolism) >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 							#endif
 								es->individuals[N].size+=es->individuals[N].metabolism/modelo->growth_constant; 
 								es->individuals[N].metabolism = 0;
-								es->control2=1;
 								//#pragma omp master
 								//{
 							//printf("Meta2= %d \n", es->individuals[N].metabolism);
@@ -2059,7 +2070,7 @@ float NMax_Metabolic;
 							es->individuals[N].metabolism=0;
 						}
 						#else
-							KillIndividual(es,N);
+					//		KillIndividual(es,N);
 						#endif
 					}
 				#ifdef VIRTUAL_GRID
