@@ -801,7 +801,7 @@ return;
 
 void BarrMCcRyCampTamano(estado *es,double flujo_recursos, model *param, Rate_log *rate)
 {
-	int static r=1;
+
 int Indice,vtipo;
 double DT=0.0;
 double TMetabolicIni=es->Meta_T;
@@ -861,12 +861,13 @@ sitio place;
 				ActualizaUniv(es, Indice, param);
 			
 			if(es->ON==(on-1)){
-					rate[1].GrowthNo[size]++;
+					rate[1].GrowthNo[size]++;	//dead rate
 			}else{		
-					rate[0].GrowthNo[size]+=(es->individuals[Indice].size - size);
-					rate[2].GrowthNo[size]+=es->control;
-					rate[3].GrowthNo[size]+=es->control2;
-					rate[4].GrowthNo[es->T]+=es->control;			
+					rate[0].GrowthNo[size]+=(es->individuals[Indice].size - size); 	//growth rate
+					rate[2].GrowthNo[size]+=es->control;	//resource rate (k)
+					rate[3].GrowthNo[size]+=es->control2;	//metabolic rate
+					rate[4].GrowthNo[es->T]+=es->control;
+					
 			}
 			
 		//	if(es->control2==1)	//usar control2 y rate[4] pa lo que se necesite
@@ -894,6 +895,8 @@ sitio place;
 			{
 				rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
 				rate[2].NoEnsambles[size]+=rate[2].TotalNo[size];
+				rate[5].Growth[size]+=((float)rate[2].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[5].NoEnsambles[size]+=rate[2].TotalNo[size];
 			}
 			if(rate[3].TotalNo[size]>9)
 			{
@@ -2023,7 +2026,7 @@ float NMax_Metabolic;
 					es->control=1;
 				#endif		
 								
-						if(abs(es->individuals[N].metabolism) >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
+						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
@@ -2070,7 +2073,7 @@ float NMax_Metabolic;
 							es->individuals[N].metabolism=0;
 						}
 						#else
-					//		KillIndividual(es,N);
+							KillIndividual(es,N);
 						#endif
 					}
 				#ifdef VIRTUAL_GRID

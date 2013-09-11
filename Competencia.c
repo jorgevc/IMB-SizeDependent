@@ -120,7 +120,7 @@ Float1D_MP TamDist_1;
 //	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/1_Aug/1_SOI_NoMuerenDisminuyenTamano");
+	sprintf(contenedor,"DATOS_TAM/11_Sep/1_SOI");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -132,7 +132,7 @@ Float1D_MP meanSize;
 float time_map[T_max+10];
 time_map[0]=0.0;
 
-Rate_log Grate[5];
+Rate_log Grate[6];
 
 FILE *file;
 
@@ -216,21 +216,21 @@ FILE *file;
 			
 	//////////////////////////////Barrido Monte CARLO:
 		char distT[50];
-		Rate_log rate[5];
+		Rate_log rate[6];
 		int MaximoTamanoIni = 100;
 		InitRate_log(&rate[0],MaximoTamanoIni);
 		InitRate_log(&rate[1],MaximoTamanoIni);
 		InitRate_log(&rate[2],MaximoTamanoIni);
 		InitRate_log(&rate[3],MaximoTamanoIni);
 		InitRate_log(&rate[4],MaximoTamanoIni);
+		InitRate_log(&rate[5],rate[2].i_max+100);
 		
 		for(i=1;i<=T_max;i++)
-		{		
-			
+		{			
 			for(Par=0;Par<MaxPar;Par++)
 			{
 				BarrMCcRyCampTamano(&e[Par], run.Model.resource_rate, &modelo, rate);			
-				ActualizaDistTamano_MP(&e[Par], &TamDist, 'A');
+				ActualizaDistTamano_MP(&e[Par], &TamDist, 'A');				
 				#pragma omp atomic
 				meanDensity.array[e[Par].T]+=e[Par].ON;
 			}
@@ -238,11 +238,11 @@ FILE *file;
 			#pragma omp barrier
 			#pragma omp atomic
 			meanSize.array[TamDist.T]+=TamDist.array[0];
-			
 			#pragma omp master
 			{
 				time_map[e[0].T]=e[0].Meta_T;
 			}
+			
 			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
 				{
@@ -251,6 +251,30 @@ FILE *file;
 					//	ActualizaDistTamano_MP(&e[Par], &TamDist_1, 'A');
 					//}
 					
+					///// meanK
+					#pragma omp single
+					{
+						InitRate_log(&Grate[5],rate[5].i_max);
+					}
+					SumRate_log(&rate[5], &Grate[5]);
+					FreeRate_log(&rate[5]);
+					InitRate_log(&rate[5],rate[2].i_max+100);
+					#pragma omp barrier
+					#pragma omp master
+					{			
+						sprintf(distT,"%s/MeanK",contenedor);
+								file=fopen(distT, "a");						
+								for(j=1;j<=Grate[5].i_max;j++){
+									if(Grate[5].NoEnsambles[j]>9)
+									{
+									fprintf(file,"%f %d %f  \n",((float)j)*delta_s, e[0].T , delta_s*Grate[5].Growth[j]/(coagulation_units*(float)Grate[5].NoEnsambles[j]));
+									}
+								}
+								fclose(file);	
+								FreeRate_log(&Grate[5]);
+					}				
+					////	
+					//distribution
 					SumaFloat1D_MP(&TamDist,&TamDist_1);
 					#pragma omp barrier
 					#pragma omp single
@@ -259,10 +283,17 @@ FILE *file;
 						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
 						ResetFloat1D_MP(&TamDist_1);
 					}
+					//
+					//correlation
+					
+					
+					//
+					// estate
 					#pragma omp master
 					{
 						GuardaEstadoEn(contenedor, &e[0]);
 					}
+					//
 					init_JKISS();
 				}
 
@@ -290,6 +321,7 @@ FILE *file;
 	FreeRate_log(&rate[2]);
 	FreeRate_log(&rate[3]);
 	FreeRate_log(&rate[4]);
+	FreeRate_log(&rate[5]);
 	
 	//	#pragma omp master
 	//	{
