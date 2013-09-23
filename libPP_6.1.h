@@ -54,7 +54,7 @@ int ON;				/**< The total number of occupied sites in the lattice. */
 int **s; 			/**< A 2 dimensional array of individuals representing the actual lattice(system). 
 						A value of 0 in s[i][j] represent an empy site in (i,j). A value > 0 represent an occupy site.*/
 int **INDICE;		/**< A 2 dimensional array which value at INDICE[i][j] is the index of an OCCUPIED site at (i,j) on a list 
-						of the occupied sites. If (i,j) is not occupyed the return value is undetermined. */
+						of the occupied sites (SO). If (i,j) is not occupyed the return value is undetermined. */
 sitio *SO;			/**< A 1 dimensional array of scructs sitio that is a list of the occupied sites. 
 						To find the index of an specific occupied site at (i,j) in this list, one have to look for it in INDICE[i][j]. */
 double Meta_T;
@@ -136,9 +136,9 @@ double (*coagulationFuntion)(Individual *);
 
 typedef struct {
 int MeanSquare;
-int NoEnsambles;
-int NoMuestras;
-int Muestra;	/** Muestra = 0 : Toma todas las muestras. */
+int NoEnsambles;		/** No de ensambles que iterara a un array de estados: es[NoEnsambles]*/
+int NoMuestras;		/** No de particiones en cada ensamble desde donde calcular la correlacion y luego promediar. */
+int Muestra;	/** Muestra = 0 : Toma todas las muestras. (Todo el ensamble) */
 } CorrDescriptor;
 
 typedef struct {
@@ -503,3 +503,5 @@ void FreeRate_log(Rate_log *rate);
 float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale);
 
 void FilterMinDistance(estado *es,int min_distance);
+float IntegraAC(Float1D_MP *Function, int r1, int r2,double scale,int time);
+int numberOfSitesAtRadi(int distance);

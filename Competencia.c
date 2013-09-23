@@ -26,9 +26,9 @@ run.Y=run.X;
 run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
 run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
-//run.T_max=(run.grid_units*run.grid_units)*10000;
-//run.T_max=(run.grid_units*run.grid_units)*35000;
-run.T_max=(run.grid_units*run.grid_units)*20000;
+//run.T_max=(run.grid_units*run.grid_units)*802;
+run.T_max=(run.grid_units*run.grid_units)*45000;
+//run.T_max=(run.grid_units*run.grid_units)*20000;
 run.NoEnsambles=20;
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
@@ -39,23 +39,23 @@ double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
 double coagulation_units = 1.0;
 #ifdef SOI
-coagulation_units = 3000.0;
+coagulation_units = 30000.0;
 run.Model.coagulation_factor = coagulation_units*1.0;
 #else
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 #endif
 //run.Model.coagulation_factor=((Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0);
 
-run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c  :0.375
+run.Model.coagulation_radio_exp=0.375; //cambiar tambien en model.c  :0.375
 run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp;  // cambiar tambien en model.c
 run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
-run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
+run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.75; 
 // 0.2 anterior 1.25
 run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
-run.Model.resource_rate=0.9; // morir por vejez
+run.Model.resource_rate=1.0; // morir por vejez
 //run.Model.resource_rate=0.95;
 
 #ifdef HEALTH_TRACK	
@@ -72,8 +72,8 @@ run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
 
 int const write_interval=(run.grid_units*run.grid_units)*200;
-int const separation=run.grid_units*3;
-//int const separation=run.grid_units*10;
+//int const separation=run.grid_units*3;
+int const separation=run.grid_units*11;
 ////
 int T_max = run.T_max;
 int NoEnsambles=run.NoEnsambles;
@@ -102,9 +102,9 @@ omp_set_num_threads(4);
 
 
 
-Float2D_MP MP_RhoVsT_1;		
-	int MaximoTamano = 1;
-		InicializaFloat2D_MP(&MP_RhoVsT_1, T_max, MaximoTamano, 0);
+//Float2D_MP MP_RhoVsT_1;		
+//	int MaximoTamano = 1;
+//		InicializaFloat2D_MP(&MP_RhoVsT_1, T_max+10, MaximoTamano, 0);
 		
 //Dist_MP MP_RhoDist_1;
 //float TamParticion=0.0001;
@@ -116,11 +116,13 @@ Float1D_MP TamDist_1;
 //Float1D_MP Experiment_1;
 	//	InicializaFloat1D_MP(&Experiment_1, 41);
 
-//Float1D_MP MP_Correlacion_1;
-//	InicializaFloat1D_MP(&MP_Correlacion_1, NDX);
+Float1D_MP MP_CorrelacionG;
+	InicializaFloat1D_MP(&MP_CorrelacionG, NDX);
+	ResetFloat1D_MP(&MP_CorrelacionG);
+	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/11_Sep/1_SOI");
+	sprintf(contenedor,"DATOS_TAM/23_Sep/MiddleClossure_rep");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -129,10 +131,14 @@ Float1D_MP meanDensity;
 Float1D_MP meanSize;
 	InicializaFloat1D_MP(&meanSize, T_max+10);
 	
+float meanResourceG[T_max+10];
+	
+	
 float time_map[T_max+10];
 time_map[0]=0.0;
 
 Rate_log Grate[6];
+InitRate_log(&Grate[5],10);
 
 FILE *file;
 
@@ -189,8 +195,8 @@ FILE *file;
 	/////////////////////////////////////Termina Estado INICIAL
 	//////////////////////////Prepara Contenedor en Memoria de cada proceso Para Mejorar rendimiento (optimizar el uso de cache de cada procesador)
 
-		Float2D_MP MP_RhoVsT;	
-				InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano, MaxPar);
+//		Float2D_MP MP_RhoVsT;	
+//				InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano, MaxPar);
 
 		Float1D_MP TamDist;
 		InicializaFloat1D_MP(&TamDist, T_max+100);
@@ -200,11 +206,11 @@ FILE *file;
 		//	Float1D_MP TamDist;
 		//	InicializaFloat1D_MP(&TamDist, T_max*2);
 			
-		//	Float2D_MP MP_Corr2D_Tamano;
-		//	InicializaFloat2D_MP(&MP_Corr2D_Tamano, NDX, NDY, 0);
+			Float2D_MP MP_Corr2D;
+			InicializaFloat2D_MP(&MP_Corr2D, NDX, NDY, 0);
 			
-		//	Float1D_MP MP_Correlacion;
-		//	InicializaFloat1D_MP(&MP_Correlacion, NDX);
+			Float1D_MP MP_Correlacion;
+			InicializaFloat1D_MP(&MP_Correlacion, NDX);
 			
 	/////////////////////////////////Termina prepara Contenedor MEMORIA de cada PROCESO
 
@@ -216,6 +222,7 @@ FILE *file;
 			
 	//////////////////////////////Barrido Monte CARLO:
 		char distT[50];
+		char corrName[50];
 		Rate_log rate[6];
 		int MaximoTamanoIni = 100;
 		InitRate_log(&rate[0],MaximoTamanoIni);
@@ -224,6 +231,23 @@ FILE *file;
 		InitRate_log(&rate[3],MaximoTamanoIni);
 		InitRate_log(&rate[4],MaximoTamanoIni);
 		InitRate_log(&rate[5],rate[2].i_max+100);
+		
+		Grupo originGroup,targetGroup;
+		originGroup.TIPO=0; //all species
+		originGroup.NEG=0; //lugares ocupados (contrario a lugares vacios)
+		targetGroup.TIPO=0;
+		targetGroup.NEG=0;
+		CorrDescriptor corrEspecification;
+		corrEspecification.MeanSquare=0;
+		corrEspecification.NoEnsambles=MaxPar;
+		corrEspecification.NoMuestras=1;
+		corrEspecification.Muestra=0;
+		Individual indvTmp,indvTmp2;
+		indv.species=1;
+		int s1,s2,r2;
+		float Interaction,s1val,s2val,f, Area,Iss;
+		FILE *fileKappa;
+		FILE *fileCorr;
 		
 		for(i=1;i<=T_max;i++)
 		{			
@@ -254,11 +278,12 @@ FILE *file;
 					///// meanK
 					#pragma omp single
 					{
-						InitRate_log(&Grate[5],rate[5].i_max);
+						FreeRate_log(&Grate[5]);
+						InitRate_log(&Grate[5],rate[5].i_max+200);
 					}
 					SumRate_log(&rate[5], &Grate[5]);
 					FreeRate_log(&rate[5]);
-					InitRate_log(&rate[5],rate[2].i_max+100);
+					InitRate_log(&rate[5],rate[2].i_max);
 					#pragma omp barrier
 					#pragma omp master
 					{			
@@ -271,22 +296,103 @@ FILE *file;
 									}
 								}
 								fclose(file);	
-								FreeRate_log(&Grate[5]);
 					}				
-					////	
+					//	
 					//distribution
+					#pragma omp single
+					{
+						ResetFloat1D_MP(&TamDist_1);
+					}
 					SumaFloat1D_MP(&TamDist,&TamDist_1);
 					#pragma omp barrier
 					#pragma omp single
 					{
 						sprintf(distT,"DT_%d",i);	
-						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
-						ResetFloat1D_MP(&TamDist_1);
+						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);			
 					}
 					//
-					//correlation
+					//Analitical Mean Resorce Intake
+					//#pragma omp master
+					//{
+					//sprintf(distT,"%s/kappa_Iss",contenedor);
+					//fileKappa=fopen(distT, "a");
+					//fputs("r1  r2  kappa(Integral)  T\n",fileKappa);
 					
+					//sprintf(corrName,"%s/corr", contenedor);
+					//fileCorr=fopen(corrName, "a");
+					//fputs("r1  r2  r  g  T\n",fileCorr);
+					//}
 					
+					//for(s1=1;s1<=Grate[5].i_max;s1++)
+					//{
+						//if(TamDist_1.array[s1] > 0.0 )
+						//{
+							//indvTmp.size=run.size_units*s1;
+							//indvTmp.radio=R(indvTmp, (&modelo));
+							//Interaction=0.0;
+							//for(s2=1;s2<=Grate[5].i_max;s2++)
+							//{
+								//ResetFloat2D_MP(&MP_Corr2D);
+								//ResetFloat1D_MP(&MP_Correlacion);
+								//originGroup.s=s1;
+								//targetGroup.s=s2;
+								//CFFT_Univ_MP(e, &corrEspecification, &MP_Corr2D, &originGroup, &targetGroup);
+								//if(MP_Corr2D.NoEnsambles > 2)
+								//{
+									//CompactaCorrelacion(&MP_Corr2D, &MP_Correlacion);
+									//SumaFloat1D_MP(&MP_Correlacion,&MP_CorrelacionG);
+								//}
+								//#pragma omp barrier
+								//#pragma omp master
+								//{
+									//s1val=pow((double)s1 , run.Model.competitionAsymetry);
+									//s2val=pow((double)s2 , run.Model.competitionAsymetry);
+									//f = s1val/(s1val + s2val);	
+									//indvTmp2.size=run.size_units*s2;
+									//indvTmp2.radio=R(indvTmp2, (&modelo));
+									//Iss=IntegraAC(&MP_CorrelacionG, indvTmp.radio,indvTmp2.radio,Length_units,i);
+									//Interaction+=(TamDist_1.array[s2]*meanDensity.array[i]*(1-f)*Iss)/((float)(TamDist_1.NoEnsambles*NoEnsambles*NDX*NDY));
+									//if(s1==s2)
+									//{
+										//for(r2=1;r2<=MP_CorrelacionG.i_max;r2++)
+										//{
+										//fprintf(fileCorr,"%d  %d  %d  %f  %d\n",indvTmp.radio,indvTmp2.radio, ((int)Length_units)*r2, MP_CorrelacionG.array[r2], i);
+										//}
+									//}		
+										//if(Iss>0.0)
+										//{
+											//fprintf(fileKappa,"%d  %d  %f  %d\n", indvTmp.radio, indvTmp2.radio, Iss, i);
+										//}
+										
+									//ResetFloat1D_MP(&MP_CorrelacionG);		
+								//}
+							//}
+							//#pragma omp master
+							//{
+							//indvTmp.size=run.size_units*s1;
+							//indvTmp.radio=R(indvTmp, (&modelo));
+							//Area=3.1416*indvTmp.radio*indvTmp.radio;
+							//meanResourceG[s1]=run.Model.resource_rate*(Area - Interaction);
+							//}
+						//}else{
+							//meanResourceG[s1]=0.0;
+						//}
+					//}			
+					//#pragma omp master
+					//{
+						//fclose(fileKappa);	
+						//fclose(fileCorr);
+							//sprintf(distT,"%s/analiticResource",contenedor);
+								//file=fopen(distT, "a");
+								//fputs("s  meanResource  T",file);
+								//for(s1=1;s1<=Grate[5].i_max;s1++){
+									//if(meanResourceG[s1]!=0.0)
+									//{
+										//fprintf(file,"%d  %f  %d\n", s1, meanResourceG[s1], i);
+									//}
+								//}
+								//fclose(file);						
+					//}
 					//
 					// estate
 					#pragma omp master
@@ -300,6 +406,8 @@ FILE *file;
 		}
 		
 	//////////////////////////////Termina Monte CARLO
+	LiberaMemoriaFloat2D_MP(&MP_Corr2D);
+	LiberaMemoriaFloat1D_MP(&MP_Correlacion);
 
 	#pragma omp single
 	{
@@ -315,7 +423,7 @@ FILE *file;
 	SumRate_log(&rate[2], &Grate[2]);
 	SumRate_log(&rate[3], &Grate[3]);
 	SumRate_log(&rate[4], &Grate[4]);
-	
+
 	FreeRate_log(&rate[0]);
 	FreeRate_log(&rate[1]);
 	FreeRate_log(&rate[2]);
@@ -334,7 +442,7 @@ FILE *file;
 			LiberaMemoria(&e[Par]);
 		}
 		
-		LiberaMemoriaFloat2D_MP(&MP_RhoVsT);
+	//	LiberaMemoriaFloat2D_MP(&MP_RhoVsT);
 	}	/////TERMINA PARALLEL
 
 // Write Rate
@@ -375,22 +483,23 @@ char distT[50];
 			//fprintf(taza,"%d %f\n",r, Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]));
 		//}
 		//fclose(taza);
-		
+	
 FreeRate_log(&Grate[0]);
 FreeRate_log(&Grate[1]);
 FreeRate_log(&Grate[2]);
 FreeRate_log(&Grate[3]);
+FreeRate_log(&Grate[5]);
 
 ////
 
 //GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
-LiberaMemoriaFloat2D_MP(&MP_RhoVsT_1);
+//LiberaMemoriaFloat2D_MP(&MP_RhoVsT_1);
 LiberaMemoriaFloat1D_MP(&TamDist_1);
 
 char thinning[50];
 sprintf(thinning,"%s/thinning",contenedor);
 file=fopen(thinning, "w");
-fputs("# T meanSize meanDensity fisicalTime\n",file);
+fputs("# T meanSize meanDensity fisicalTime totalResourceR\n",file);
 
 for(r=1;r<=T_max;r++){
 fprintf(file,"%d %f %f %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles, time_map[r], Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]) );

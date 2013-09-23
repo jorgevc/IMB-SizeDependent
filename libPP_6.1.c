@@ -849,7 +849,8 @@ sitio place;
 				ReallocRate_log(&rate[0], 50);
 				ReallocRate_log(&rate[1], 50);
 				ReallocRate_log(&rate[2], 50);
-				ReallocRate_log(&rate[3], 50);	
+				ReallocRate_log(&rate[3], 50);
+				ReallocRate_log(&rate[5], 50);	
 			}
 				
 			place=es->SO[Indice];	
@@ -923,24 +924,36 @@ void ReallocRate_log(Rate_log *rate, int add_size){
 					if(tmp!=NULL)
 					{
 						rate->GrowthNo=tmp;
+					}else{
+						printf("ReallocRate_log fallo en realllocar 1");
+						exit(0);
 					}
 
 					tmp=(int *)realloc(rate->TotalNo, (rate->i_max + add_size +1)*sizeof(int));
 					if(tmp!=NULL)
 					{
 						rate->TotalNo=tmp;
+					}else{
+						printf("ReallocRate_log fallo en realllocar 2");
+						exit(0);
 					}	
 					
 					tmpf=(float *)realloc(rate->Growth, (rate->i_max + add_size +1)*sizeof(float));
 					if(tmp!=NULL)
 					{
 						rate->Growth=tmpf;
+					}else{
+						printf("ReallocRate_log fallo en realllocar 3");
+						exit(0);
 					}
 					
 					tmp=(int *)realloc(rate->NoEnsambles, (rate->i_max + add_size + 1)*sizeof(int));
 					if(tmp!=NULL)
 					{
 						rate->NoEnsambles=tmp;
+					}else{
+						printf("ReallocRate_log fallo en realllocar 4");
+						exit(0);
 					}	
 										
 					for(i=(rate->i_max+1);i<=(rate->i_max + add_size);i++)
@@ -1376,6 +1389,7 @@ void CompactaCorrelacion(Float2D_MP *corr2D, Float1D_MP *corrRadial)
 return;
 }
 
+
 void DoblaCorrelacion(Float2D_MP *corr2D)
 {
 	int i,j;
@@ -1579,7 +1593,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 	 on1=0;
 	 on2=0;
 	 on0=0;
-	 
+
 	 for ( i = 0; i < NDX; i++ )
 	  {
 		for ( j = 0; j < NDY; j++ )
@@ -1590,14 +1604,14 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				{
 					if(TipoOrigen->NEG!=1) //no es el negativo
 					{
-						if(es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoOrigen->TIPO && es[n].s[i+1][j+1]==TipoOrigen->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoOrigen->TIPO && es[n].individuals[es[n].INDICE[i+1][j+1]].size==TipoOrigen->s)
 						{
 							on0++;
 							SO[on0].i=i;
 							SO[on0].j=j;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoOrigen->TIPO && es[n].s[i+1][j+1]!=TipoOrigen->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoOrigen->TIPO && es[n].individuals[es[n].INDICE[i+1][j+1]].size!=TipoOrigen->s)
 						{
 							on0++;
 							SO[on0].i=i;
@@ -1627,14 +1641,14 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				{
 					if(TipoOrigen->NEG!=1) //no es el negativo
 					{
-						if(es[n].s[i+1][j+1]==TipoOrigen->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].size==TipoOrigen->s)
 						{
 							on0++;
 							SO[on0].i=i;
 							SO[on0].j=j;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].s[i+1][j+1]!=TipoOrigen->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].size!=TipoOrigen->s)
 						{
 							on0++;
 							SO[on0].i=i;
@@ -1667,7 +1681,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				{
 					if(TipoDestino->NEG!=1) //no es el negativo
 					{
-						if(es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoDestino->TIPO && es[n].s[i+1][j+1]==TipoDestino->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species==TipoDestino->TIPO && es[n].individuals[es[n].INDICE[i+1][j+1]].size==TipoDestino->s)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1675,7 +1689,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 							in2[i*NDY + j] = 0.0;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoDestino->TIPO && es[n].s[i+1][j+1]!=TipoDestino->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].species!=TipoDestino->TIPO && es[n].individuals[es[n].INDICE[i+1][j+1]].size!=TipoDestino->s)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1708,7 +1722,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 				{
 					if(TipoDestino->NEG!=1) //no es el negativo
 					{
-						if(es[n].s[i+1][j+1]==TipoDestino->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].size==TipoDestino->s)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1716,7 +1730,7 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 							in2[i*NDY + j] = 0.0;
 						}
 					}else{ //el negativo
-						if(es[n].s[i+1][j+1]>0 && es[n].s[i+1][j+1]!=TipoDestino->s)
+						if(es[n].s[i+1][j+1]>0 && es[n].individuals[es[n].INDICE[i+1][j+1]].size!=TipoDestino->s)
 						{
 							in2[i*NDY + j] = 1.0;
 							on2++;
@@ -1744,19 +1758,16 @@ plan2 = fftw_plan_dft_c2r_2d ( NDX, NDY, out1, in1, FFTW_ESTIMATE );
 						}
 					}
 				}
-			}
-					
-		}  
+			}			
+		}
 	  }
-	  
 	  
 	  
 	  if(MuestraIni != MuestraFin && MuestraFin>on0)
 	  {
 		  MuestraFin=on0;
-		  printf("No maximo de muestras posibles = %d !\n",on0);
+		  printf("No maximo de muestras posibles en CFFT_Univ_MP = %d !\n",on0);
 	  }
-	  
 	for(Muestra=MuestraIni;Muestra<=MuestraFin;Muestra++)
 	{
 		on1=0;
@@ -1841,7 +1852,7 @@ void KillIndividual(estado *es, int N){
 	 es->individuals[N]=es->individuals[es->ON];
 	 es->INDICE[es->SO[N].i][es->SO[N].j]=N;	 
 	 (es->ON)--;
-	 es->individuals=(Individual *)realloc(es->individuals, (es->ON + 1)*sizeof(Individual)); 
+	 es->individuals=(Individual *)realloc(es->individuals, (es->ON + 1)*sizeof(Individual));
 return;
 }
 
@@ -2090,16 +2101,23 @@ void InitRate_log(Rate_log *rate,const int Size)
 {
 	rate->Growth=(float *)calloc(Size+1, sizeof(float));
 	rate->NoEnsambles=(int *)calloc(Size+1, sizeof(int));
-		unsigned int i;
-		for(i=0;i<=Size;i++)
-		{
-			rate->Growth[i]=0.0;
-			rate->NoEnsambles[i]=0;
-		}
-		rate->i_max=Size;
-		
-	rate->GrowthNo=(int *)calloc(Size+1, sizeof(int));
-	rate->TotalNo=(int *)calloc(Size+1, sizeof(int));
+	
+	if(rate->Growth != NULL && rate->NoEnsambles != NULL)
+	{
+			unsigned int i;
+			for(i=0;i<=Size;i++)
+			{
+				rate->Growth[i]=0.0;
+				rate->NoEnsambles[i]=0;
+			}
+			rate->i_max=Size;
+			
+		rate->GrowthNo=(int *)calloc(Size+1, sizeof(int));
+		rate->TotalNo=(int *)calloc(Size+1, sizeof(int));
+	}else{
+		printf("InitRate_log fallo allocar %d espacios\nSaliendo del programa...",Size);
+		exit(0);
+	}
 return;
 }
 
@@ -2116,7 +2134,7 @@ void SumRate_log(Rate_log *origin, Rate_log *target)
 			target->NoEnsambles[i]+=origin->NoEnsambles[i];
 		}
 	}else{
-		printf("Not able to copy longer Rate_log to smaller one!\n");
+		printf("Not able to copy longer Rate_log to smaller one!\n Target: %d , Origin: %d\n",target->i_max,origin->i_max);
 	}
 return;
 }
@@ -2241,7 +2259,7 @@ float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
 {
 	float a,s1,s2,d,Area;
 	d=scale*sqrt((O.i-T.i)*(O.i-T.i) + (O.j-T.j)*(O.j-T.j));
-	if(d>(rO+rT))
+	if(d>(rO+rT) || d<rO || d<rT)
 	{
 		return 0.0;
 	}
@@ -2252,3 +2270,63 @@ float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
 return Area;
 }
 
+float IntegraAC(Float1D_MP *Function, int r1, int r2,double scale, int time)
+{
+	int ResourcesScale = scale;
+	if(Function->NoEnsambles>0)
+	{
+		float Result=0.0;
+		float Overlap=1.0;
+		int r,d;
+		sitio O,T;
+		O.i=0;
+		O.j=0;
+		T.i=0;
+		T.j=0;
+		for(r=1;Overlap>0.0;r++)
+		{
+			d=r*scale;
+			if(d>r1 && d>r2)
+			{
+				T.i=r;
+				Overlap=CircleOverlap(O,r1,T,r2,ResourcesScale);
+				Result+=((float)numberOfSitesAtRadi(r))*Function->array[r]*Overlap;		
+			}
+		}
+		
+		return (Result/((float)Function->NoEnsambles));
+	}else{
+		return 0.0;
+	}
+
+}
+
+int numberOfSitesAtRadi(int distance)
+{
+	int radio=distance;
+	int MasDer;
+	int RadioInterior2;
+	int Radio2;
+	int Contados,i,j;
+	
+		Contados=0;
+		RadioInterior2 = (radio-1) * (radio-1);
+		Radio2 = radio * radio;
+		MasDer=radio;
+		i=MasDer;
+		for(j=0;j<radio;j++)
+		{ 
+			do{
+				if((i*i + j*j)<=Radio2)
+				{
+							Contados++;									
+				}else{
+					MasDer--;
+				}
+				i--;
+			}while((i*i + j*j)>RadioInterior2);
+			i=MasDer;
+		}
+		
+return 4*Contados;
+}
