@@ -878,8 +878,8 @@ sitio place;
 						
 	}
 	
-	//if(es->T > 10000)
-	//{
+	if(es->T > 10000)
+	{
 		for(size=1;size<=rate[0].i_max;size++)
 		{
 			if(rate[0].TotalNo[size]>9)
@@ -905,7 +905,7 @@ sitio place;
 				rate[3].NoEnsambles[size]+=rate[3].TotalNo[size];
 			}		
 		}
-	//}
+	}
 
 		rate[4].Growth[es->T]+=((float)rate[4].GrowthNo[es->T])/(TMetabolicActual - TMetabolicIni);
 		rate[4].NoEnsambles[es->T]++;
@@ -1878,7 +1878,7 @@ float NMax_Metabolic;
 	Rand = F_JKISS();
 
 	Dead=0.0;
-	if(es->individuals[N].radio > 3)
+	if(es->individuals[N].size >= 40)
 	{
 		Birth=modelo->birth_rate;
 	}else{
@@ -2023,7 +2023,7 @@ float NMax_Metabolic;
 					}
 				}
 					Resource += partialArea;
-					Resource *= (modelo->resource_rate); // - 0.2*Rand2);
+					Resource *= (modelo->resource_rate - 0.05*Rand2); // (modelo->resource_rate); // - 0.2*Rand2);
 					//Resource -= (15*ResourcesScale*ResourcesScale*Rand2);
 					es->individuals[N].metabolism += Resource;
 					es->control=Resource;

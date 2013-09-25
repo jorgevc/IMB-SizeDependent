@@ -90,16 +90,16 @@ fprintf(file,"\nhealth_factor=%f\n", run.Model.health_factor);
 fprintf(file,"\nmin_health=%d\n", run.Model.min_health);
 
 fprintf(file,"\nresource_rate=%f\n", run.Model.resource_rate);
-fprintf(file,"ResourcesScale=%f\n", run.Model.ResourcesScale);
+fprintf(file,"ResourcesScale=%d\n", run.Model.ResourcesScale);
 fprintf(file,"competitionAsymetry=%f\n", run.Model.competitionAsymetry);
 
 fprintf(file,"\nbirth_rate=%f\n",run.Model.birth_rate);
 fprintf(file,"RadioBirth=%d\n",run.Model.RadioBirth);
 fprintf(file,"dead_rate=%f (intrinsic dead rate)\n", run.Model.dead_rate);
 
-fprintf(file,"---INITIAL CONDITIONS---\n")
+fprintf(file,"---INITIAL CONDITIONS---\n");
 fprintf(file,"Initial mean distance among individuals=%d\n",run.initialMeanDistance);
-fprintf(file,"Initial minimun separation among individuals=%d\n", initialMinSeparation);
+fprintf(file,"Initial minimun separation among individuals=%d\n", run.initialMinSeparation);
 
 fclose(file);
 	

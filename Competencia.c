@@ -27,19 +27,19 @@ run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
 run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
 //run.T_max=(run.grid_units*run.grid_units)*802;
-run.T_max=(run.grid_units*run.grid_units)*45000;
+run.T_max=(run.grid_units*run.grid_units)*20000;
 //run.T_max=(run.grid_units*run.grid_units)*20000;
 run.NoEnsambles=20;
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
 run.Model.ResourcesScale = 50; //conversion factor to the imaginary resources grid or SOI resolution
-run.Model.competitionAsymetry = 0.0;
+run.Model.competitionAsymetry = 1.0;
 double const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
 double coagulation_units = 1.0;
 #ifdef SOI
-coagulation_units = 30000.0;
+coagulation_units = 3000.0;
 run.Model.coagulation_factor = coagulation_units*1.0;
 #else
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
@@ -52,14 +52,14 @@ run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
 run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.75; 
 // 0.2 anterior 1.25
-run.Model.health_factor=8.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 // con 2.0 salen buenos resultados para U shape de dead rate.
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
 run.Model.resource_rate=1.0; // morir por vejez
 //run.Model.resource_rate=0.95;
-run.initialMeanDistance=run.grid_units*11;
-run.initialMinSeparation=4;
+run.initialMeanDistance=run.grid_units*12;
+run.initialMinSeparation=10;
 
 #ifdef HEALTH_TRACK	
 run.Model.min_health=0;
@@ -69,7 +69,7 @@ run.Model.min_health=0;
 
 
 //run.Model.birth_rate=0.5;
-run.Model.birth_rate=0.0;
+run.Model.birth_rate=0.5;
 run.Model.RadioBirth=10;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
@@ -125,7 +125,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/25_Sep/MinDist4_mean11Asym0");
+	sprintf(contenedor,"DATOS_TAM/25_Sep/SteadyStateMaturity60Dead2Asym1Rand");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
