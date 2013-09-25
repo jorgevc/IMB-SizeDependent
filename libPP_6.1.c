@@ -1878,7 +1878,7 @@ float NMax_Metabolic;
 	Rand = F_JKISS();
 
 	Dead=0.0;
-	if(es->individuals[N].size >= 40)
+	if(es->individuals[N].size >= 1)
 	{
 		Birth=modelo->birth_rate;
 	}else{

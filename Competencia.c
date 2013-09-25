@@ -27,7 +27,7 @@ run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
 run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
 //run.T_max=(run.grid_units*run.grid_units)*802;
-run.T_max=(run.grid_units*run.grid_units)*20000;
+run.T_max=(run.grid_units*run.grid_units)*15000;
 //run.T_max=(run.grid_units*run.grid_units)*20000;
 run.NoEnsambles=20;
 
@@ -59,7 +59,7 @@ run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); 
 run.Model.resource_rate=0.9; // morir por vejez
 //run.Model.resource_rate=0.95;
 run.initialMeanDistance=run.grid_units*12;
-run.initialMinSeparation=10;
+run.initialMinSeparation=3;
 
 #ifdef HEALTH_TRACK	
 run.Model.min_health=0;
