@@ -2023,7 +2023,7 @@ float NMax_Metabolic;
 					}
 				}
 					Resource += partialArea;
-					Resource *= (modelo->resource_rate - 0.05*Rand2); // (modelo->resource_rate); // - 0.2*Rand2);
+					Resource *= (modelo->resource_rate + 0.05*Rand2); // (modelo->resource_rate); // - 0.2*Rand2);
 					//Resource -= (15*ResourcesScale*ResourcesScale*Rand2);
 					es->individuals[N].metabolism += Resource;
 					es->control=Resource;

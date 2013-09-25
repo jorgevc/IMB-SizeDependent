@@ -46,17 +46,17 @@ run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 #endif
 //run.Model.coagulation_factor=((Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0);
 
-run.Model.coagulation_radio_exp=0.375; //cambiar tambien en model.c  :0.375
+run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c  :0.375
 run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp;  // cambiar tambien en model.c
 run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
-run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.75; 
+run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
 // 0.2 anterior 1.25
 run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 // con 2.0 salen buenos resultados para U shape de dead rate.
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
-run.Model.resource_rate=1.0; // morir por vejez
+run.Model.resource_rate=0.9; // morir por vejez
 //run.Model.resource_rate=0.95;
 run.initialMeanDistance=run.grid_units*12;
 run.initialMinSeparation=10;
@@ -69,7 +69,7 @@ run.Model.min_health=0;
 
 
 //run.Model.birth_rate=0.5;
-run.Model.birth_rate=0.5;
+run.Model.birth_rate=0.1;
 run.Model.RadioBirth=10;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
