@@ -33,7 +33,7 @@ run.NoEnsambles=20;
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
 run.Model.ResourcesScale = 50; //conversion factor to the imaginary resources grid or SOI resolution
-run.Model.competitionAsymetry = 1.0;
+run.Model.competitionAsymetry = 0.0;
 double const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
@@ -52,11 +52,14 @@ run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
 run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.75; 
 // 0.2 anterior 1.25
-run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+run.Model.health_factor=8.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+// con 2.0 salen buenos resultados para U shape de dead rate.
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
 run.Model.resource_rate=1.0; // morir por vejez
 //run.Model.resource_rate=0.95;
+run.initialMeanDistance=run.grid_units*11;
+run.initialMinSeparation=4;
 
 #ifdef HEALTH_TRACK	
 run.Model.min_health=0;
@@ -73,7 +76,7 @@ run.Model.intra_coagulation=0.0;
 
 int const write_interval=(run.grid_units*run.grid_units)*200;
 //int const separation=run.grid_units*3;
-int const separation=run.grid_units*11;
+float const separation=(float)run.initialMeanDistance;
 ////
 int T_max = run.T_max;
 int NoEnsambles=run.NoEnsambles;
@@ -122,7 +125,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/23_Sep/MiddleClossure_rep");
+	sprintf(contenedor,"DATOS_TAM/25_Sep/MinDist4_mean11Asym0");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -175,9 +178,10 @@ FILE *file;
 			
 		int i,j;
 			for(Par=0;Par<MaxPar;Par++)
-			{		
-			GeneraEstadoAleatorioTamano(&e[Par], 0.08, indv);		
-			FilterMinDistance(&e[Par], separation);
+			{
+			GeneraEstadoAleatorioTamano(&e[Par], 1.0/separation , indv);		
+		//	FilterMinDistance(&e[Par], separation);
+		FilterMinDistance(&e[Par], run.initialMinSeparation);
 			
 		//		for(i=separation;i<NDX;i+=separation)
 			//	{

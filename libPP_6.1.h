@@ -158,6 +158,8 @@ typedef struct {
 	double size_units;
 	int T_max;
 	model Model;
+	int initialMeanDistance;
+	int initialMinSeparation;
 } runDescriptor;
 
 extern Grupo GRUPO_INI;

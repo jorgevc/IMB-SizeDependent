@@ -97,6 +97,10 @@ fprintf(file,"\nbirth_rate=%f\n",run.Model.birth_rate);
 fprintf(file,"RadioBirth=%d\n",run.Model.RadioBirth);
 fprintf(file,"dead_rate=%f (intrinsic dead rate)\n", run.Model.dead_rate);
 
+fprintf(file,"---INITIAL CONDITIONS---\n")
+fprintf(file,"Initial mean distance among individuals=%d\n",run.initialMeanDistance);
+fprintf(file,"Initial minimun separation among individuals=%d\n", initialMinSeparation);
+
 fclose(file);
 	
 fprintf(stdout,"\nlisto creando contenedor!\n");

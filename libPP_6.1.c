@@ -2023,7 +2023,8 @@ float NMax_Metabolic;
 					}
 				}
 					Resource += partialArea;
-					Resource *= (modelo->resource_rate); //+ 0.05*Rand2);
+					Resource *= (modelo->resource_rate); // - 0.2*Rand2);
+					//Resource -= (15*ResourcesScale*ResourcesScale*Rand2);
 					es->individuals[N].metabolism += Resource;
 					es->control=Resource;
 					//#pragma omp master
@@ -2259,9 +2260,17 @@ float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
 {
 	float a,s1,s2,d,Area;
 	d=scale*sqrt((O.i-T.i)*(O.i-T.i) + (O.j-T.j)*(O.j-T.j));
-	if(d>(rO+rT) || d<rO || d<rT)
+	if(d>(rO+rT))
 	{
 		return 0.0;
+	}
+	if(d < (rO-rT))
+	{
+		return 3.1416*rT*rT;
+	}
+	if(d < (rT-rO))
+	{
+		return 3.1416*rO*rO;
 	}
 	a=sqrt((-d+rO+rT)*(d-rO+rT)*(d+rO-rT)*(d+rO+rT))/d;
 	s1=(a + 2.0*rO)/2.0;
