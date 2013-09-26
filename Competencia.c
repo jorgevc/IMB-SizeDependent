@@ -332,7 +332,7 @@ FILE *file;
 						sprintf(distT,"%s/cumDeadR_%d",contenedor,i);
 						file=fopen(distT, "w");
 						for(j=1;j<=Grate[1].i_max;j++){
-							fprintf(taza,"%f %f\n",((float)j)*delta_s, Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
+							fprintf(file,"%f %f\n",((float)j)*delta_s, Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
 						}
 						fclose(file);
 						FreeRate_log(&Grate[1]);
