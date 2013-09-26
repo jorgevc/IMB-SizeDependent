@@ -1878,7 +1878,7 @@ float NMax_Metabolic;
 	Rand = F_JKISS();
 
 	Dead=0.0;
-	if(es->individuals[N].size >= 1)
+	if(es->individuals[N].radio > 3)
 	{
 		Birth=modelo->birth_rate;
 	}else{
@@ -2023,7 +2023,7 @@ float NMax_Metabolic;
 					}
 				}
 					Resource += partialArea;
-					Resource *= (modelo->resource_rate + 0.05*Rand2); // (modelo->resource_rate); // - 0.2*Rand2);
+					Resource *= (modelo->resource_rate); // - 0.2*Rand2);
 					//Resource -= (15*ResourcesScale*ResourcesScale*Rand2);
 					es->individuals[N].metabolism += Resource;
 					es->control=Resource;
@@ -2264,14 +2264,14 @@ float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
 	{
 		return 0.0;
 	}
-	if(d < (rO-rT))
-	{
-		return 3.1416*rT*rT;
-	}
-	if(d < (rT-rO))
-	{
-		return 3.1416*rO*rO;
-	}
+	//if(d < (rO-rT))
+	//{
+		//return 3.1416*rT*rT;
+	//}
+	//if(d < (rT-rO))
+	//{
+		//return 3.1416*rO*rO;
+	//}
 	a=sqrt((-d+rO+rT)*(d-rO+rT)*(d+rO-rT)*(d+rO+rT))/d;
 	s1=(a + 2.0*rO)/2.0;
 	s2=(a + 2.0*rT)/2.0;

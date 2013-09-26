@@ -27,7 +27,7 @@ run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
 run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
 //run.T_max=(run.grid_units*run.grid_units)*802;
-run.T_max=(run.grid_units*run.grid_units)*15000;
+run.T_max=(run.grid_units*run.grid_units)*20000;
 //run.T_max=(run.grid_units*run.grid_units)*20000;
 run.NoEnsambles=20;
 
@@ -69,7 +69,7 @@ run.Model.min_health=0;
 
 
 //run.Model.birth_rate=0.5;
-run.Model.birth_rate=0.1;
+run.Model.birth_rate=0.5;
 run.Model.RadioBirth=10;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
@@ -125,7 +125,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/25_Sep/SteadyStateMaturity60Dead2Asym1Rand");
+	sprintf(contenedor,"DATOS_TAM/26_Sep/SteadyState");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -179,9 +179,9 @@ FILE *file;
 		int i,j;
 			for(Par=0;Par<MaxPar;Par++)
 			{
-			GeneraEstadoAleatorioTamano(&e[Par], 1.0/separation , indv);		
-		//	FilterMinDistance(&e[Par], separation);
-		FilterMinDistance(&e[Par], run.initialMinSeparation);
+			GeneraEstadoAleatorioTamano(&e[Par], 0.08 , indv);		
+			FilterMinDistance(&e[Par], 3);
+		//FilterMinDistance(&e[Par], run.initialMinSeparation);
 			
 		//		for(i=separation;i<NDX;i+=separation)
 			//	{
@@ -210,11 +210,11 @@ FILE *file;
 		//	Float1D_MP TamDist;
 		//	InicializaFloat1D_MP(&TamDist, T_max*2);
 			
-			Float2D_MP MP_Corr2D;
-			InicializaFloat2D_MP(&MP_Corr2D, NDX, NDY, 0);
+		//	Float2D_MP MP_Corr2D;
+		//	InicializaFloat2D_MP(&MP_Corr2D, NDX, NDY, 0);
 			
-			Float1D_MP MP_Correlacion;
-			InicializaFloat1D_MP(&MP_Correlacion, NDX);
+		//	Float1D_MP MP_Correlacion;
+		//	InicializaFloat1D_MP(&MP_Correlacion, NDX);
 			
 	/////////////////////////////////Termina prepara Contenedor MEMORIA de cada PROCESO
 
@@ -410,8 +410,8 @@ FILE *file;
 		}
 		
 	//////////////////////////////Termina Monte CARLO
-	LiberaMemoriaFloat2D_MP(&MP_Corr2D);
-	LiberaMemoriaFloat1D_MP(&MP_Correlacion);
+	//LiberaMemoriaFloat2D_MP(&MP_Corr2D);
+	//LiberaMemoriaFloat1D_MP(&MP_Correlacion);
 
 	#pragma omp single
 	{
