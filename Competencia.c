@@ -125,7 +125,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/26_Sep/SteadyState");
+	sprintf(contenedor,"DATOS_TAM/26_Sep/SteadyState2");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -179,8 +179,8 @@ FILE *file;
 		int i,j;
 			for(Par=0;Par<MaxPar;Par++)
 			{
-			GeneraEstadoAleatorioTamano(&e[Par], 0.08 , indv);		
-			FilterMinDistance(&e[Par], 3);
+			GeneraEstadoAleatorioTamano(&e[Par], 1.0/(float)run.initialMeanDistance , indv);		
+			FilterMinDistance(&e[Par], run.initialMinSeparation);
 		//FilterMinDistance(&e[Par], run.initialMinSeparation);
 			
 		//		for(i=separation;i<NDX;i+=separation)

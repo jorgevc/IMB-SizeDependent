@@ -2264,14 +2264,14 @@ float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
 	{
 		return 0.0;
 	}
-	//if(d < (rO-rT))
-	//{
-		//return 3.1416*rT*rT;
-	//}
-	//if(d < (rT-rO))
-	//{
-		//return 3.1416*rO*rO;
-	//}
+	if(d < (rO-rT))
+	{
+		return 3.1416*rT*rT;
+	}
+	if(d < (rT-rO))
+	{
+		return 3.1416*rO*rO;
+	}
 	a=sqrt((-d+rO+rT)*(d-rO+rT)*(d+rO-rT)*(d+rO+rT))/d;
 	s1=(a + 2.0*rO)/2.0;
 	s2=(a + 2.0*rT)/2.0;
