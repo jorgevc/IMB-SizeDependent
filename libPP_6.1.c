@@ -968,6 +968,23 @@ void ReallocRate_log(Rate_log *rate, int add_size){
 return;
 }
 
+void ActualizeCumulativeDensity(Float1D_MP *sizeDist,float density,Float1D_MP *cumDensity)
+{
+	for(s1=1;s1<=TamDist_1.i_max;s1++)
+	{
+		cumDensity->array[s1]+=(sizeDist.array[s1]*density)/((float)sizeDist.NoEnsambles);
+	}
+	cumDensity->NoEnsambles++;
+	cumDensity->T=sizeDist->T;
+	if(cumDensity->index_units != sizeDist->index_units)
+	{
+	cumDensity->index_units=sizeDist->index_units;
+	printf("ATENTION!: Change of index_units ins AcutalizeCumulativeDensity performed (This should happend only once!)\n");
+	}
+	
+return;
+}
+
 void ActualizaDistTamano_MP(estado *es, Float1D_MP *TamDist, char Opcion)
 {
 int T=es->T;

@@ -507,3 +507,4 @@ float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale);
 void FilterMinDistance(estado *es,int min_distance);
 float IntegraAC(Float1D_MP *Function, int r1, int r2,double scale,int time);
 int numberOfSitesAtRadi(int distance);
+void ActualizeCumulativeDensity(Float1D_MP *sizeDist,float density,Float1D_MP *cummDensity);

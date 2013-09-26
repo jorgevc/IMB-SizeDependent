@@ -116,6 +116,9 @@ omp_set_num_threads(4);
 Float1D_MP TamDist_1;
 		InicializaFloat1D_MP(&TamDist_1, T_max+10);
 		
+Float1D_MP CumulativeTamDist_1;
+		InicializaFloat1D_MP(&CumulativeTamDist_1, T_max+10);
+		
 //Float1D_MP Experiment_1;
 	//	InicializaFloat1D_MP(&Experiment_1, 41);
 
@@ -270,7 +273,7 @@ FILE *file;
 			{
 				time_map[e[0].T]=e[0].Meta_T;
 			}
-			
+			ActualizeCumulativeDensity(&TamDist,meanDensity.array[TamDist.T]/(NoEnsambles*NDX*NDY),&CumulativeTamDist_1);
 			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
 				{
@@ -312,7 +315,10 @@ FILE *file;
 					#pragma omp single
 					{
 						sprintf(distT,"DT_%d",i);	
-						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);			
+						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
+						
+						sprintf(distT,"CumulativeDT_%d",i);
+						GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
 					}
 					//
 					//Analitical Mean Resorce Intake
