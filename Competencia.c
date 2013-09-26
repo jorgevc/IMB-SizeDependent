@@ -56,7 +56,7 @@ run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensio
 // con 2.0 salen buenos resultados para U shape de dead rate.
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
-run.Model.resource_rate=0.9; // morir por vejez
+run.Model.resource_rate=1.0; // morir por vejez
 //run.Model.resource_rate=0.95;
 run.initialMeanDistance=run.grid_units*12;
 run.initialMinSeparation=3;
@@ -128,7 +128,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/26_Sep/SteadyState2");
+	sprintf(contenedor,"DATOS_TAM/26_Sep/SteadyState3");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -320,6 +320,23 @@ FILE *file;
 					//	sprintf(distT,"CumulativeDT_%d",i);
 					//	GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
 					}
+					//cumulative deadRate
+					#pragma omp single
+					{
+						InitRate_log(&Grate[1],rate[1].i_max);
+					}
+					SumRate_log(&rate[1], &Grate[1]);
+					#pragma omp barrier
+					#pragma omp master
+					{
+						sprintf(distT,"%s/cumDeadR_%d",contenedor,i);
+						file=fopen(distT, "w");
+						for(j=1;j<=Grate[1].i_max;j++){
+							fprintf(taza,"%f %f\n",((float)j)*delta_s, Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
+						}
+						fclose(file);
+						FreeRate_log(&Grate[1]);
+					}				
 					//
 					//Analitical Mean Resorce Intake
 					//#pragma omp master
