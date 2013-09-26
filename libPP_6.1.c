@@ -970,11 +970,12 @@ return;
 
 void ActualizeCumulativeDensity(Float1D_MP *sizeDist,float density,Float1D_MP *cumDensity)
 {
-	for(s1=1;s1<=TamDist_1.i_max;s1++)
+	int s1;
+	for(s1=1;s1<=sizeDist->i_max;s1++)
 	{
-		cumDensity->array[s1]+=(sizeDist.array[s1]*density)/((float)sizeDist.NoEnsambles);
+		cumDensity->array[s1]+=(sizeDist->array[s1]*density);
 	}
-	cumDensity->NoEnsambles++;
+	cumDensity->NoEnsambles+=sizeDist->NoEnsambles;
 	cumDensity->T=sizeDist->T;
 	if(cumDensity->index_units != sizeDist->index_units)
 	{

@@ -273,7 +273,7 @@ FILE *file;
 			{
 				time_map[e[0].T]=e[0].Meta_T;
 			}
-			ActualizeCumulativeDensity(&TamDist,meanDensity.array[TamDist.T]/(NoEnsambles*NDX*NDY),&CumulativeTamDist_1);
+			//ActualizeCumulativeDensity(&TamDist,meanDensity.array[TamDist.T]/(NoEnsambles*NDX*NDY),&CumulativeTamDist_1);
 			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
 				{
@@ -317,8 +317,8 @@ FILE *file;
 						sprintf(distT,"DT_%d",i);	
 						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
 						
-						sprintf(distT,"CumulativeDT_%d",i);
-						GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
+					//	sprintf(distT,"CumulativeDT_%d",i);
+					//	GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
 					}
 					//
 					//Analitical Mean Resorce Intake
