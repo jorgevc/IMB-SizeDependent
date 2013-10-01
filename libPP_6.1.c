@@ -878,7 +878,7 @@ sitio place;
 						
 	}
 	
-	if(es->T > 10000)
+	if(es->T > 1)
 	{
 		for(size=1;size<=rate[0].i_max;size++)
 		{
@@ -975,7 +975,7 @@ void ActualizeCumulativeDensity(Float1D_MP *sizeDist,float density,Float1D_MP *c
 	{
 		cumDensity->array[s1]+=(sizeDist->array[s1]*density);
 	}
-	cumDensity->NoEnsambles+=sizeDist->NoEnsambles;
+	cumDensity->NoEnsambles=sizeDist->NoEnsambles;
 	cumDensity->T=sizeDist->T;
 	if(cumDensity->index_units != sizeDist->index_units)
 	{

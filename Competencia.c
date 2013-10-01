@@ -27,7 +27,7 @@ run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
 run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
 
 //run.T_max=(run.grid_units*run.grid_units)*802;
-run.T_max=(run.grid_units*run.grid_units)*20000;
+run.T_max=(run.grid_units*run.grid_units)*50000;
 //run.T_max=(run.grid_units*run.grid_units)*20000;
 run.NoEnsambles=20;
 
@@ -39,24 +39,24 @@ double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
 double coagulation_units = 1.0;
 #ifdef SOI
-coagulation_units = 3000.0;
+coagulation_units = 30000.0;
 run.Model.coagulation_factor = coagulation_units*1.0;
 #else
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 #endif
 //run.Model.coagulation_factor=((Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0);
 
-run.Model.coagulation_radio_exp=0.25; //cambiar tambien en model.c  :0.375
+run.Model.coagulation_radio_exp=0.375; //cambiar tambien en model.c  :0.375
 run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp;  // cambiar tambien en model.c
 run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*1.0;
 run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
-run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.2; 
+run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*0.75; 
 // 0.2 anterior 1.25
 run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 // con 2.0 salen buenos resultados para U shape de dead rate.
 run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*0.05); // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
-run.Model.resource_rate=1.0; // morir por vejez
+run.Model.resource_rate=1.0; // 
 //run.Model.resource_rate=0.95;
 run.initialMeanDistance=run.grid_units*12;
 run.initialMinSeparation=3;
@@ -69,13 +69,13 @@ run.Model.min_health=0;
 
 
 //run.Model.birth_rate=0.5;
-run.Model.birth_rate=0.5;
-run.Model.RadioBirth=10;
+run.Model.birth_rate=0.0;
+run.Model.RadioBirth=15;
 run.Model.dead_rate=0.0;
 run.Model.intra_coagulation=0.0;
 
 int const write_interval=(run.grid_units*run.grid_units)*200;
-//int const separation=run.grid_units*3;
+
 float const separation=(float)run.initialMeanDistance;
 ////
 int T_max = run.T_max;
@@ -128,7 +128,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/26_Sep/SteadyState3");
+	sprintf(contenedor,"DATOS_TAM/1_Oct/Coomes2");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -145,6 +145,7 @@ time_map[0]=0.0;
 
 Rate_log Grate[6];
 InitRate_log(&Grate[5],10);
+InitRate_log(&Grate[0],50);
 
 FILE *file;
 
@@ -184,7 +185,6 @@ FILE *file;
 			{
 			GeneraEstadoAleatorioTamano(&e[Par], 1.0/(float)run.initialMeanDistance , indv);		
 			FilterMinDistance(&e[Par], run.initialMinSeparation);
-		//FilterMinDistance(&e[Par], run.initialMinSeparation);
 			
 		//		for(i=separation;i<NDX;i+=separation)
 			//	{
@@ -252,7 +252,7 @@ FILE *file;
 		Individual indvTmp,indvTmp2;
 		indv.species=1;
 		int s1,s2,r2;
-		float Interaction,s1val,s2val,f, Area,Iss;
+		float Interaction,s1val,s2val,f, Area,Iss,instantDeadRate;
 		FILE *fileKappa;
 		FILE *fileCorr;
 		
@@ -273,7 +273,7 @@ FILE *file;
 			{
 				time_map[e[0].T]=e[0].Meta_T;
 			}
-			//ActualizeCumulativeDensity(&TamDist,meanDensity.array[TamDist.T]/(NoEnsambles*NDX*NDY),&CumulativeTamDist_1);
+			ActualizeCumulativeDensity(&TamDist,meanDensity.array[TamDist.T]/(NoEnsambles*NDX*NDY*e[0].Max_Metabolic),&CumulativeTamDist_1);
 			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
 				{
@@ -299,7 +299,7 @@ FILE *file;
 								for(j=1;j<=Grate[5].i_max;j++){
 									if(Grate[5].NoEnsambles[j]>9)
 									{
-									fprintf(file,"%f %d %f  \n",((float)j)*delta_s, e[0].T , delta_s*Grate[5].Growth[j]/(coagulation_units*(float)Grate[5].NoEnsambles[j]));
+									fprintf(file,"%f %d %f \n",((float)j)*delta_s, e[0].T , delta_s*Grate[5].Growth[j]/(coagulation_units*(float)Grate[5].NoEnsambles[j]));
 									}
 								}
 								fclose(file);	
@@ -317,8 +317,8 @@ FILE *file;
 						sprintf(distT,"DT_%d",i);	
 						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
 						
-					//	sprintf(distT,"CumulativeDT_%d",i);
-					//	GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
+						sprintf(distT,"CumulativeDT_%d",i);
+						GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
 					}
 					//cumulative deadRate
 					#pragma omp single
@@ -329,10 +329,20 @@ FILE *file;
 					#pragma omp barrier
 					#pragma omp master
 					{
-						sprintf(distT,"%s/cumDeadR_%d",contenedor,i);
+						sprintf(distT,"%s/instantDeadR_%d",contenedor,i);
 						file=fopen(distT, "w");
+						if(( Grate[1].i_max - Grate[0].i_max ) > 0)
+						{
+							ReallocRate_log(&Grate[0], Grate[1].i_max - Grate[0].i_max );
+						}
 						for(j=1;j<=Grate[1].i_max;j++){
-							fprintf(file,"%f %f\n",((float)j)*delta_s, Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
+							if(Grate[1].NoEnsambles[j]>0)
+							{
+							instantDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j])) - (Grate[0].Growth[j]/((float)Grate[0].NoEnsambles[j]));
+							fprintf(file,"%f %f\n",((float)j)*delta_s, instantDeadRate);
+							}
+							Grate[0].Growth[j]=Grate[1].Growth[j];
+							Grate[0].NoEnsambles[j]=Grate[1].NoEnsambles[j];
 						}
 						fclose(file);
 						FreeRate_log(&Grate[1]);
@@ -438,6 +448,7 @@ FILE *file;
 
 	#pragma omp single
 	{
+		FreeRate_log(&Grate[0]);
 		InitRate_log(&Grate[0],rate[0].i_max);
 		InitRate_log(&Grate[1],rate[1].i_max);
 		InitRate_log(&Grate[2],rate[2].i_max);
