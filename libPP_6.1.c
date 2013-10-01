@@ -878,7 +878,7 @@ sitio place;
 						
 	}
 	
-	if(es->T > 1)
+	if(es->T > 0)
 	{
 		for(size=1;size<=rate[0].i_max;size++)
 		{
