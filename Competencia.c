@@ -128,7 +128,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/1_Oct/Coomes3");
+	sprintf(contenedor,"DATOS_TAM/2_Oct/Coomes2");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -252,6 +252,7 @@ FILE *file;
 		Individual indvTmp,indvTmp2;
 		indv.species=1;
 		int s1,s2,r2;
+		int done=0;
 		float Interaction,s1val,s2val,f, Area,Iss,instantDeadRate,cumDeadRate;
 		FILE *fileKappa;
 		FILE *fileCorr;
@@ -274,7 +275,7 @@ FILE *file;
 				time_map[e[0].T]=e[0].Meta_T;
 			}
 			#pragma omp barrier
-			ActualizeCumulativeDensity(&TamDist,meanDensity.array[TamDist.T]/(NoEnsambles*NDX*NDY*(time_map[i]-time_map[i-1])),&CumulativeTamDist_1);
+			ActualizeCumulativeDensity(&TamDist,(meanDensity.array[TamDist.T]*(time_map[i]-time_map[i-1]))/(NoEnsambles*NDX*NDY),&CumulativeTamDist_1);
 			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
 				{
@@ -321,35 +322,95 @@ FILE *file;
 						sprintf(distT,"CumulativeDT_%d",i);
 						GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
 					}
-					//cumulative deadRate
-					#pragma omp single
+					////cumulative and instant deadRate
+					//#pragma omp single
+					//{
+						//InitRate_log(&Grate[1],rate[1].i_max);
+					//}
+					//SumRate_log(&rate[1], &Grate[1]);
+					//#pragma omp barrier
+					//#pragma omp master
+					//{
+						//sprintf(distT,"%s/cumDeadR_%d",contenedor,i);
+						////sprintf(distT,"%s/instantDeadR_%d",contenedor,i);
+						//file=fopen(distT, "w");
+						////if(( Grate[1].i_max - Grate[0].i_max ) > 0)
+					////	{
+					////		ReallocRate_log(&Grate[0], Grate[1].i_max - Grate[0].i_max );
+					////	}
+						//for(j=1;j<=Grate[1].i_max;j++){
+							//if(Grate[1].NoEnsambles[j]>0)
+							//{
+							////instantDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j])) - (Grate[0].Growth[j]/((float)Grate[0].NoEnsambles[j]));
+							//cumDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
+							//fprintf(file,"%f %f\n",((float)j)*delta_s, cumDeadRate);
+							//}
+						////	Grate[0].Growth[j]=Grate[1].Growth[j];
+						////	Grate[0].NoEnsambles[j]=Grate[1].NoEnsambles[j];
+						//}
+						//fclose(file);
+						//FreeRate_log(&Grate[1]);
+					//}		
+					//competitive and mature deadRate
+					if(done == 0 && meanSize.array[i] > 100*NoEnsambles )
 					{
-						InitRate_log(&Grate[1],rate[1].i_max);
-					}
-					SumRate_log(&rate[1], &Grate[1]);
-					#pragma omp barrier
-					#pragma omp master
-					{
-						sprintf(distT,"%s/cumDeadR_%d",contenedor,i);
-						//sprintf(distT,"%s/instantDeadR_%d",contenedor,i);
-						file=fopen(distT, "w");
-						//if(( Grate[1].i_max - Grate[0].i_max ) > 0)
-					//	{
-					//		ReallocRate_log(&Grate[0], Grate[1].i_max - Grate[0].i_max );
-					//	}
-						for(j=1;j<=Grate[1].i_max;j++){
-							if(Grate[1].NoEnsambles[j]>0)
-							{
-							//instantDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j])) - (Grate[0].Growth[j]/((float)Grate[0].NoEnsambles[j]));
-							cumDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
-							fprintf(file,"%f %f\n",((float)j)*delta_s, cumDeadRate);
-							}
-						//	Grate[0].Growth[j]=Grate[1].Growth[j];
-						//	Grate[0].NoEnsambles[j]=Grate[1].NoEnsambles[j];
+						#pragma omp single
+						{
+							InitRate_log(&Grate[1],rate[1].i_max);
 						}
-						fclose(file);
-						FreeRate_log(&Grate[1]);
-					}				
+						SumRate_log(&rate[1], &Grate[1]);
+						#pragma omp barrier
+						#pragma omp master
+						{
+							sprintf(distT,"%s/competitiveDeadR",contenedor);
+							file=fopen(distT, "w");		
+							if(( Grate[1].i_max - Grate[0].i_max ) > 0)
+							{
+								ReallocRate_log(&Grate[0], Grate[1].i_max - Grate[0].i_max );
+							}
+							for(j=1;j<=Grate[1].i_max;j++){
+								if(Grate[1].NoEnsambles[j]>0)
+								{
+								cumDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
+								fprintf(file,"%f %f\n",((float)j)*delta_s, cumDeadRate);
+								}
+								Grate[0].Growth[j]=Grate[1].Growth[j];
+								Grate[0].NoEnsambles[j]=Grate[1].NoEnsambles[j];
+							}
+							fclose(file);
+							FreeRate_log(&Grate[1]);	
+						}
+						done=1;	
+					}
+					if(i >= (T_max - write_interval) && done == 1 )
+					{
+						#pragma omp single
+						{
+							InitRate_log(&Grate[1],rate[1].i_max);
+						}
+						SumRate_log(&rate[1], &Grate[1]);
+						#pragma omp barrier
+						#pragma omp master
+						{
+							sprintf(distT,"%s/matureDeadR",contenedor);
+							file=fopen(distT, "w");		
+							for(j=1;j<=Grate[1].i_max;j++){
+								if(Grate[1].NoEnsambles[j]>0)
+								{
+									if(Grate[0].i_max >= j)
+									{
+									Grate[1].Growth[j]=Grate[1].Growth[j] - Grate[0].Growth[j];
+									Grate[1].NoEnsambles[j]=Grate[1].NoEnsambles[j]-Grate[0].NoEnsambles[j];
+									}
+								cumDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
+								fprintf(file,"%f %f\n",((float)j)*delta_s, cumDeadRate);
+								}
+							}
+							fclose(file);
+							FreeRate_log(&Grate[1]);	
+						}
+						done=2;	
+					}
 					//
 					//Analitical Mean Resorce Intake
 					//#pragma omp master
