@@ -916,6 +916,27 @@ es->Meta_T=TMetabolicActual;
 return;
 }
 
+void BarrMCcRyCampTamanoSimple(estado *es,double flujo_recursos, model *param)
+{
+int Indice;
+double DT=0.0;
+double TMetabolicIni=es->Meta_T;
+double LMax_Metabolic=es->Max_Metabolic;
+double TMetabolicActual;
+	
+	while(DT<1.0 && es->ON>0){
+		Indice = I_JKISS(1,(es->ON));
+		TMetabolicActual= TMetabolicIni + DT/LMax_Metabolic;
+		DT+=1.0/(es->ON); 
+		ActualizaUniv(es, Indice, param);					
+	}
+		
+(es->T)++;
+es->Meta_T=TMetabolicActual;
+
+return;
+}
+
 void ReallocRate_log(Rate_log *rate, int add_size){
 	int *tmp;
 	float *tmpf;
@@ -1966,7 +1987,6 @@ float NMax_Metabolic;
 			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
 			{			
 				//es->individuals[N].radio=modelo->coagulation_radio_factor*sqrtf((float)(es->individuals[N].size)); //ratio between radio and size of individual
-				es->individuals[N].radio=R(es->individuals[N],modelo);
 				int ResourcesScale = modelo->ResourcesScale;
 				double Oval,Xval,Rand2;
 				sitio competingSite;
@@ -2015,7 +2035,7 @@ float NMax_Metabolic;
 				#ifdef SOI
 				double Resource=0.0;		
 				double overlapArea,totalArea,partialArea;
-				totalArea = 3.1416 * es->individuals[N].radio*es->individuals[N].radio;
+				totalArea = 3.1416 * es->individuals[N].radio_float*es->individuals[N].radio_float;
 				partialArea = totalArea;
 				for(ne=0;ne < es->individuals[N].neighbours.NoMembers; ne++)
 				{
@@ -2050,19 +2070,24 @@ float NMax_Metabolic;
 					//printf("pMeta=%f\n",pMetabolic);
 					//printf("Resource = %f \n",Resource);
 					//printf("Meta1= %d \n", es->individuals[N].metabolism);
+					//printf("GrowthCOnst= %f\n",(float)modelo->growth_constant);
 					//}
+					//#pragma omp barrier
+					//exit(0);
 				#else			
 					es->individuals[N].metabolism +=1;
 					es->control=1;
 				#endif		
-								
-						if(es->individuals[N].metabolism >= modelo->growth_constant)		// Si he llenado las necesidades de metabolizmo crezco o sano
+							
+						if(es->individuals[N].metabolism >= modelo->meta_needs[es->individuals[N].size] )		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 							#endif
-								es->individuals[N].size+=es->individuals[N].metabolism/modelo->growth_constant; 
+								es->individuals[N].size+=es->individuals[N].metabolism/modelo->meta_needs[es->individuals[N].size]; 
 								es->individuals[N].metabolism = 0;
+								es->individuals[N].radio_float=R(es->individuals[N],modelo);
+								es->individuals[N].radio=es->individuals[N].radio_float;
 								//#pragma omp master
 								//{
 							//printf("Meta2= %d \n", es->individuals[N].metabolism);
@@ -2357,3 +2382,22 @@ int numberOfSitesAtRadi(int distance)
 		
 return 4*Contados;
 }
+
+int* SetMetaNeeds(model Modelo)
+ {
+	 float fact;
+	 int d;
+	 int MAX_DIAM;
+	 int* meta_needs;
+	 MAX_DIAM=2.0*pow(3.1416,3.0/2.0)*pow(Modelo.Cr,4.0)/pow(Modelo.Cm,3.0/2.0);
+	 MAX_DIAM+=10;
+	 meta_needs=(int *)calloc(MAX_DIAM+1,sizeof(int));
+	 fact=(pow(2.0,1.0/3.0)/3.0)*Modelo.Cg/pow(Modelo.Cr,8.0/3.0);
+	 for(d=1;d<=MAX_DIAM;d++)
+	 {
+		meta_needs[d]=fact*pow((float)d,5.0/3.0);
+	 }
+return meta_needs;
+ }
+ 
+

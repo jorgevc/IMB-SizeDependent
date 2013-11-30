@@ -42,6 +42,7 @@ int radio;
 int metabolism;
 int health;
 sitesList neighbours;
+float radio_float;
 } Individual;
 
 /** Contains the state of the system(lattice). */
@@ -131,7 +132,11 @@ int ResourcesScale;
 double competitionAsymetry;
 int min_health;
 int growth_constant;
+int* meta_needs;
 double (*coagulationFuntion)(Individual *);
+float Cr;
+float Cm;
+float Cg;
 } model;
 
 typedef struct {
@@ -160,7 +165,10 @@ typedef struct {
 	model Model;
 	int initialMeanDistance;
 	int initialMinSeparation;
+	int initialPopulation;
+	float scaleFactor;
 } runDescriptor;
+
 
 extern Grupo GRUPO_INI;
 
@@ -508,3 +516,6 @@ void FilterMinDistance(estado *es,int min_distance);
 float IntegraAC(Float1D_MP *Function, int r1, int r2,double scale,int time);
 int numberOfSitesAtRadi(int distance);
 void ActualizeCumulativeDensity(Float1D_MP *sizeDist,float density,Float1D_MP *cummDensity);
+
+void BarrMCcRyCampTamanoSimple(estado *es,double flujo_recursos, model *param);
+int* SetMetaNeeds(model Modelo);
