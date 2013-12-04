@@ -43,6 +43,7 @@ int metabolism;
 int health;
 sitesList neighbours;
 float radio_float;
+float metabolism_float;
 } Individual;
 
 /** Contains the state of the system(lattice). */
@@ -65,6 +66,8 @@ double size_units;
 Individual *individuals;
 int control;
 int control2;
+float control_float;
+float control2_float;
 } estado;
 
 /** General porpuse 2 dimensinal array of float suitable to be used for ensemble averages. */
@@ -132,8 +135,9 @@ int ResourcesScale;
 double competitionAsymetry;
 int min_health;
 int growth_constant;
-int* meta_needs;
-double (*coagulationFuntion)(Individual *);
+float* meta_needs;
+float* R;
+float* M;
 float Cr;
 float Cm;
 float Cg;
@@ -518,4 +522,6 @@ int numberOfSitesAtRadi(int distance);
 void ActualizeCumulativeDensity(Float1D_MP *sizeDist,float density,Float1D_MP *cummDensity);
 
 void BarrMCcRyCampTamanoSimple(estado *es,double flujo_recursos, model *param);
-int* SetMetaNeeds(model Modelo);
+float* SetMetaNeeds(model Modelo, float scaleFactor);
+float* SetR(model Modelo, float scaleFactor);
+float* SetM(model Modelo, float scaleFactor);

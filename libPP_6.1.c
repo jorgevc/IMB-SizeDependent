@@ -9,6 +9,7 @@ Copyright 2012 Jorge Velazquez
 #include <fftw3.h>
 #include "GNA.h"
 #include "libPP_6.1.h"
+#include <limits.h>
 
 
 especie *parametros=NULL;
@@ -865,8 +866,8 @@ sitio place;
 					rate[1].GrowthNo[size]++;	//dead rate
 			}else{		
 					rate[0].GrowthNo[size]+=(es->individuals[Indice].size - size); 	//growth rate
-					rate[2].GrowthNo[size]+=es->control;	//resource rate (k)
-					rate[3].GrowthNo[size]+=es->control2;	//metabolic rate
+					rate[2].GrowthNo[size]+=(100.0*es->control_float);	//resource rate (k)
+					rate[3].GrowthNo[size]+=(100.0*es->control2_float);	//metabolic rate
 					rate[4].GrowthNo[es->T]+=es->control;
 					
 			}
@@ -894,14 +895,14 @@ sitio place;
 			}
 			if(rate[2].TotalNo[size]>9)
 			{
-				rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(100.0*(TMetabolicActual - TMetabolicIni));
 				rate[2].NoEnsambles[size]+=rate[2].TotalNo[size];
-				rate[5].Growth[size]+=((float)rate[2].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[5].Growth[size]+=((float)rate[2].GrowthNo[size])/(100.0*(TMetabolicActual - TMetabolicIni));
 				rate[5].NoEnsambles[size]+=rate[2].TotalNo[size];
 			}
 			if(rate[3].TotalNo[size]>9)
 			{
-				rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(100.0*(TMetabolicActual - TMetabolicIni));
 				rate[3].NoEnsambles[size]+=rate[3].TotalNo[size];
 			}		
 		}
@@ -1078,8 +1079,8 @@ memset(rhoVec,0,tot * sizeof(int));
 					prob_tam=((float)rhoVec[n])/((float)(ON));
 					if(n>TamDist->i_max)
 					{
-						fprintf(stdout,"Tamanos mayores que lo que La distribucion puede guardar. Checar funcion ActualizaDistTamano_MP para encontrar el error");
-						
+						fprintf(stdout,"Tamanos mayores que lo que La distribucion puede guardar. Checar funcion ActualizaDistTamano_MP para encontrar el error\n");
+						fprintf(stdout,"i_max=%d, tot=%d\n",TamDist->i_max,tot);
 					}else{
 					#pragma omp atomic
 					TamDist->array[n]+=prob_tam;
@@ -1909,6 +1910,7 @@ int j=es->SO[N].j;
 sitio *SO = es->SO;
 int radioCre;
 int radioCoa;
+int increment;
 
 int max_tamano = 50;
 
@@ -1942,12 +1944,13 @@ float NMax_Metabolic;
 					//pMetabolic=1.5*(float)s[i][j]/es->Max_Metabolic;
 				//}else{
 					//pMetabolic = modelo->metabolic_factor*(pow((float)(es->individuals[N].size + es->individuals[N].health), 2.0))/es->Max_Metabolic;
-					pMetabolic = M(es->individuals[N],modelo)/es->Max_Metabolic;
+					//pMetabolic = M(es->individuals[N],modelo)/es->Max_Metabolic;
+					pMetabolic = modelo->M[es->individuals[N].size]/es->Max_Metabolic;
 				//}				
 			/////	
 			#ifdef SOI
-				es->individuals[N].metabolism -= pMetabolic;
-				es->control2 = pMetabolic;
+				es->individuals[N].metabolism_float -= pMetabolic;
+				es->control2_float = pMetabolic;
 			#else
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
@@ -2053,40 +2056,34 @@ float NMax_Metabolic;
 						overlapArea = CircleOverlap(es->SO[N],es->individuals[N].radio,competingSite,competingRatio,ResourcesScale);
 						if(overlapArea > 0.0)
 						{
-							Oval=pow((double)es->individuals[N].size , modelo->competitionAsymetry);
-							Xval=pow((double)es->individuals[es->INDICE[competingSite.i][competingSite.j]].size, modelo->competitionAsymetry);
+							Oval=pow(0.5*(double)es->individuals[N].size , modelo->competitionAsymetry);
+							Xval=pow(0.5*(double)es->individuals[es->INDICE[competingSite.i][competingSite.j]].size, modelo->competitionAsymetry);
 							Resource += (Oval/(Oval + Xval))*(overlapArea);
 							partialArea -= overlapArea; 
 						}
 					}
 				}
+				
 					Resource += partialArea;
 					Resource *= (modelo->resource_rate); // - 0.2*Rand2);
 					//Resource -= (15*ResourcesScale*ResourcesScale*Rand2);
-					es->individuals[N].metabolism += Resource;
-					es->control=Resource;
-					//#pragma omp master
-					//{
-					//printf("pMeta=%f\n",pMetabolic);
-					//printf("Resource = %f \n",Resource);
-					//printf("Meta1= %d \n", es->individuals[N].metabolism);
-					//printf("GrowthCOnst= %f\n",(float)modelo->growth_constant);
-					//}
-					//#pragma omp barrier
-					//exit(0);
+					es->individuals[N].metabolism_float += Resource;
+					es->control_float=Resource;
+					
 				#else			
 					es->individuals[N].metabolism +=1;
 					es->control=1;
 				#endif		
-							
-						if(es->individuals[N].metabolism >= modelo->meta_needs[es->individuals[N].size] )		// Si he llenado las necesidades de metabolizmo crezco o sano
+						if(es->individuals[N].metabolism_float >= modelo->meta_needs[es->individuals[N].size] )		// Si he llenado las necesidades de metabolizmo crezco o sano
 						{
 							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 							#endif
-								es->individuals[N].size+=es->individuals[N].metabolism/modelo->meta_needs[es->individuals[N].size]; 
-								es->individuals[N].metabolism = 0;
-								es->individuals[N].radio_float=R(es->individuals[N],modelo);
+								increment=(int)(es->individuals[N].metabolism_float/modelo->meta_needs[es->individuals[N].size]); 
+								es->individuals[N].size+=increment;
+								es->individuals[N].metabolism_float -= ((float)increment)*modelo->meta_needs[es->individuals[N].size];
+								//es->individuals[N].metabolism_float =0.0;
+								es->individuals[N].radio_float=modelo->R[es->individuals[N].size];
 								es->individuals[N].radio=es->individuals[N].radio_float;
 								//#pragma omp master
 								//{
@@ -2117,7 +2114,8 @@ float NMax_Metabolic;
 				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
 				#endif
 					//if((((modelo->health_factor)*(modelo->growth_constant)*(es->individuals[N].size)) + es->individuals[N].metabolism)<0) //Las reservas para satisfacer el metabolizmo, se proponen constantes (proporcionales al tamano). Si se acaban las reservas, muero.
-					if((((modelo->health_factor)*(modelo->growth_constant)) + es->individuals[N].metabolism)<0)
+					//if((((modelo->health_factor)*(modelo->growth_constant)) + es->individuals[N].metabolism)<0)
+					if(pMetabolic > Resource)
 					{
 						#ifdef HEALTH_TRACK
 						if(es->individuals[N].health <= modelo->min_health) // si esta enfermo con gravedad prefijada muere
@@ -2383,21 +2381,56 @@ int numberOfSitesAtRadi(int distance)
 return 4*Contados;
 }
 
-int* SetMetaNeeds(model Modelo)
+float* SetMetaNeeds(model Modelo, float scaleFactor)
  {
 	 float fact;
 	 int d;
 	 int MAX_DIAM;
-	 int* meta_needs;
-	 MAX_DIAM=2.0*pow(3.1416,3.0/2.0)*pow(Modelo.Cr,4.0)/pow(Modelo.Cm,3.0/2.0);
+	 float* meta_needs;
+	 MAX_DIAM=10.0*2.0*pow(3.1416,3.0/2.0)*pow(Modelo.Cr,4.0)/pow(Modelo.Cm,3.0/2.0);
+	 printf("MaxDiam[cm]:%d\n",MAX_DIAM);
 	 MAX_DIAM+=10;
-	 meta_needs=(int *)calloc(MAX_DIAM+1,sizeof(int));
-	 fact=(pow(2.0,1.0/3.0)/3.0)*Modelo.Cg/pow(Modelo.Cr,8.0/3.0);
+	 meta_needs=(float *)calloc(MAX_DIAM+1,sizeof(float));
+	 fact=scaleFactor*0.1*((Modelo.Cg*pow(2.0,1.0/3.0))/(3.0*pow(Modelo.Cr,8.0/3.0)));
 	 for(d=1;d<=MAX_DIAM;d++)
 	 {
-		meta_needs[d]=fact*pow((float)d,5.0/3.0);
+		meta_needs[d]=fact*pow(0.1*(float)d,5.0/3.0);
 	 }
 return meta_needs;
  }
  
+float* SetR(model Modelo, float scaleFactor)
+{
+	 float fact;
+	 int d;
+	 int MAX_DIAM;
+	 float* radios;
+	 MAX_DIAM=10.0*2.0*pow(3.1416,3.0/2.0)*pow(Modelo.Cr,4.0)/pow(Modelo.Cm,3.0/2.0);
+	 MAX_DIAM+=10;
+	 radios=(float *)calloc(MAX_DIAM+1,sizeof(float));
+	 fact=scaleFactor*(0.1/2.0);
+	 for(d=1;d<=MAX_DIAM;d++)
+	 {
+		radios[d]=fact*((float)d);
+	 }
+return radios;
+}
 
+float* SetM(model Modelo, float scaleFactor)
+{
+	 float fact;
+	 double exp;
+	 int d;
+	 int MAX_DIAM;
+	 float* metabolic_rates;
+	 MAX_DIAM=10.0*2.0*pow(3.1416,3.0/2.0)*pow(Modelo.Cr,4.0)/pow(Modelo.Cm,3.0/2.0);
+	 MAX_DIAM+=10;
+	 metabolic_rates=(float *)calloc(MAX_DIAM+1,sizeof(float));
+	 fact=scaleFactor*(Modelo.Cm/pow(2.0*Modelo.Cr,8.0/3.0));
+	 exp=8.0/3.0;
+	 for(d=1;d<=MAX_DIAM;d++)
+	 {
+		metabolic_rates[d]=fact*pow(0.1*(double)(d),exp);
+	 }
+return metabolic_rates;
+}

@@ -29,45 +29,50 @@ run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica
 //run.T_max=(run.grid_units*run.grid_units)*802;
 //run.T_max=(run.grid_units*run.grid_units)*50000;
 //run.T_max=(run.grid_units*run.grid_units)*20000;
-run.T_max=40000;
+run.T_max=80000;
 run.NoEnsambles=100;
-int const write_interval=1000;
+int const write_interval=2000;
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
-run.Model.ResourcesScale = 50; //conversion factor to the imaginary resources grid or SOI resolution
-run.Model.competitionAsymetry = 1.6212;
+run.Model.ResourcesScale = 1.0; //conversion factor to the imaginary resources grid or SOI resolution
+run.Model.competitionAsymetry = (8.0/3.0)*1.6212;
 double const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
 double coagulation_units = 1.0;
 #ifdef SOI
-coagulation_units = 500.0;
+coagulation_units = 10000.0;
 run.Model.coagulation_factor = coagulation_units*1.0;
 #else
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 #endif
 //run.Model.coagulation_factor=((Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0);
 
-run.Model.coagulation_radio_exp=0.375; //cambiar tambien en model.c  :0.375
+run.Model.coagulation_radio_exp=1.0; //cambiar tambien en model.c  :0.375
 run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp;  // cambiar tambien en model.c
 run.Model.Cr=1.0;
-run.Model.coagulation_radio_factor=((Length_units)/pow(run.size_units,run.Model.coagulation_radio_exp))*run.Model.Cr;
-run.Model.metabolic_exp=1.0; //cambiar tambien en model.c
-run.Model.Cm=0.07;
+run.Model.coagulation_radio_factor=(Length_units)*0.1;
+run.Model.metabolic_exp=2.6666; //cambiar tambien en model.c
+float dgrmax=30.0;
+run.Model.Cm=(3.1416*pow(2.0,2.0/3.0)*pow(run.Model.Cr,8.0/3.0))/(3.0*pow(dgrmax,2.0/3.0));
+float dmax=2.0*pow(3.1416,3.0/2.0)*pow(run.Model.Cr,4.0)/pow(run.Model.Cm,3.0/2.0);
+printf("Cm=%f , dmax=%f\n",run.Model.Cm,dmax);
 //run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*run.Model.Cm; //0.75; 
 // 0.2 anterior 1.25
-run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*(run.Model.Cm)/pow(2.0*run.Model.Cr,8.0/3.0);
-run.Model.health_factor=2.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
+run.Model.metabolic_factor=(Area_units)*pow(0.1,run.Model.metabolic_exp)*(run.Model.Cm)/pow(2.0*run.Model.Cr,8.0/3.0);
+run.Model.health_factor=0.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
 // con 2.0 salen buenos resultados para U shape de dead rate.
-run.Model.Cg=1.0;
-run.Model.growth_constant=(coagulation_units*(Area_units/run.size_units)*run.Model.Cg); // (int)>0 needed resources per unit size increse.
+run.Model.Cg=0.5;
+run.Model.growth_constant=(Area_units/run.size_units)*run.Model.Cg; // (int)>0 needed resources per unit size increse.
 //run.Model.growth_constant=5;
-run.Model.resource_rate=1.0; // 
+run.Model.resource_rate=1.0/coagulation_units; // 
 //run.Model.resource_rate=0.95;
 run.initialMeanDistance=run.grid_units*12;
-run.initialMinSeparation=3;
+run.initialMinSeparation=1000;
 
-run.Model.meta_needs=SetMetaNeeds(run.Model);
+run.Model.meta_needs=SetMetaNeeds(run.Model, Area_units);
+run.Model.R=SetR(run.Model, Length_units);
+run.Model.M=SetM(run.Model, Area_units);
 
 #ifdef HEALTH_TRACK	
 run.Model.min_health=0;
@@ -94,7 +99,7 @@ modelo = run.Model;
 
 Individual indv;
 indv.species=1;
-indv.size=run.size_units*10;
+indv.size=run.size_units*50;
 indv.radio_float=R(indv, (&modelo));
 indv.radio=indv.radio_float;
 indv.metabolism=0;
@@ -136,7 +141,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/Nov29");
+	sprintf(contenedor,"DATOS_TAM/Dec04/1");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -582,14 +587,14 @@ char distT[50];
 		sprintf(distT,"%s/ResourceR",contenedor);
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[2].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[2].Growth[r]/(coagulation_units*(float)Grate[2].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[2].Growth[r]/((float)Grate[2].NoEnsambles[r]));
 		}
 		fclose(taza);
 		
 		sprintf(distT,"%s/MetabolicR",contenedor);
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[3].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[3].Growth[r]/(coagulation_units*(float)Grate[3].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[3].Growth[r]/((float)Grate[3].NoEnsambles[r]));
 		}
 		fclose(taza);
 		
