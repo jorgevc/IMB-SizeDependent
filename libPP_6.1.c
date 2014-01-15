@@ -809,9 +809,11 @@ double TMetabolicIni=es->Meta_T;
 double LMax_Metabolic=es->Max_Metabolic;
 double TEnteroAnterior;
 double TMetabolicActual;
+float size_float;
 
 //////////// rate internals
-int size,meta;
+int size,sizeN,meta;
+float precition=10000.0;
 int on;
 sitio place;
 
@@ -841,11 +843,13 @@ sitio place;
 			
 			
 			size=es->individuals[Indice].size;
+			size_float=es->individuals[Indice].size_float;
+			sizeN=(int)(10.0*size_float);
 			meta=es->individuals[Indice].metabolism;
 			on=es->ON;
 			es->control=0;
 			es->control2=0;
-			if(size==rate[0].i_max)
+			if(sizeN==rate[0].i_max)
 			{
 				ReallocRate_log(&rate[0], 50);
 				ReallocRate_log(&rate[1], 50);
@@ -855,21 +859,26 @@ sitio place;
 			}
 				
 			place=es->SO[Indice];	
-			rate[0].TotalNo[size]++;
-			rate[1].TotalNo[size]++;	
-			rate[2].TotalNo[size]++;
-			rate[3].TotalNo[size]++;
+			rate[0].TotalNo[sizeN]++;
+			rate[1].TotalNo[sizeN]++;	
+			rate[2].TotalNo[sizeN]++;
+			rate[3].TotalNo[sizeN]++;
 			
 				ActualizaUniv(es, Indice, param);
 			
 			if(es->ON==(on-1)){
-					rate[1].GrowthNo[size]++;	//dead rate
+					rate[1].GrowthNo[sizeN]++;	//dead rate
 			}else{		
-					rate[0].GrowthNo[size]+=(es->individuals[Indice].size - size); 	//growth rate
-					rate[2].GrowthNo[size]+=(100.0*es->control_float);	//resource rate (k)
-					rate[3].GrowthNo[size]+=(100.0*es->control2_float);	//metabolic rate
-					rate[4].GrowthNo[es->T]+=es->control;
+					//rate[0].GrowthNo[size]+=(es->individuals[Indice].size - size); 	//growth rate
 					
+				//	rate[0].GrowthNo[size]+=(int)(10.0*(es->individuals[Indice].size_float - size_float)); 	//growth rate
+				//	rate[2].GrowthNo[size]+=(int)(1000000.0*es->control_float);	//resource rate (k)
+				//	rate[3].GrowthNo[size]+=(int)(1000000.0*es->control2_float);	//metabolic rate
+					rate[0].GrowthNo[sizeN]+=precition*(10.0*(es->individuals[Indice].size_float - size_float)); 	//growth rate
+					rate[2].GrowthNo[sizeN]+=(precition*es->control_float);	//resource rate (k)
+					rate[3].GrowthNo[sizeN]+=(precition*es->control2_float);	
+					
+					rate[4].GrowthNo[es->T]+=(precition*es->control_float);
 			}
 			
 		//	if(es->control2==1)	//usar control2 y rate[4] pa lo que se necesite
@@ -885,7 +894,7 @@ sitio place;
 		{
 			if(rate[0].TotalNo[size]>9)
 			{
-				rate[0].Growth[size]+=((float)rate[0].GrowthNo[size])/(TMetabolicActual - TMetabolicIni);
+				rate[0].Growth[size]+=((float)rate[0].GrowthNo[size])/(precition*(TMetabolicActual - TMetabolicIni));
 				rate[0].NoEnsambles[size]+=rate[0].TotalNo[size];
 			}
 			if(rate[1].TotalNo[size]>9)
@@ -895,20 +904,20 @@ sitio place;
 			}
 			if(rate[2].TotalNo[size]>9)
 			{
-				rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(100.0*(TMetabolicActual - TMetabolicIni));
+				rate[2].Growth[size]+=((float)rate[2].GrowthNo[size])/(precition*(TMetabolicActual - TMetabolicIni));
 				rate[2].NoEnsambles[size]+=rate[2].TotalNo[size];
-				rate[5].Growth[size]+=((float)rate[2].GrowthNo[size])/(100.0*(TMetabolicActual - TMetabolicIni));
+				rate[5].Growth[size]+=((float)rate[2].GrowthNo[size])/(precition*(TMetabolicActual - TMetabolicIni));
 				rate[5].NoEnsambles[size]+=rate[2].TotalNo[size];
 			}
 			if(rate[3].TotalNo[size]>9)
 			{
-				rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(100.0*(TMetabolicActual - TMetabolicIni));
+				rate[3].Growth[size]+=((float)rate[3].GrowthNo[size])/(precition*(TMetabolicActual - TMetabolicIni));
 				rate[3].NoEnsambles[size]+=rate[3].TotalNo[size];
 			}		
 		}
 	}
 
-		rate[4].Growth[es->T]+=((float)rate[4].GrowthNo[es->T])/(TMetabolicActual - TMetabolicIni);
+		rate[4].Growth[es->T]+=((float)rate[4].GrowthNo[es->T])/(precition*(TMetabolicActual - TMetabolicIni));
 		rate[4].NoEnsambles[es->T]++;
 		
 (es->T)++;
@@ -1024,6 +1033,7 @@ int size;
 
 		for(n=1;n<=ON;n++)
 		{
+			es->individuals[n].size=10.0*es->individuals[n].size_float;
 			if(max_tam<es->individuals[n].size)
 			{
 				max_tam=es->individuals[n].size;
@@ -1911,20 +1921,17 @@ sitio *SO = es->SO;
 int radioCre;
 int radioCoa;
 int increment;
-
-int max_tamano = 50;
-
 float NMax_Metabolic; 
 	
 	Rand = F_JKISS();
 
 	Dead=0.0;
-	if(es->individuals[N].radio > 3)
-	{
-		Birth=modelo->birth_rate;
-	}else{
-		Birth=0;
-	}
+	//if(es->individuals[N].radio > 3)
+	//{
+		//Birth=modelo->birth_rate;
+	//}else{
+		//Birth=0;
+	//}
 	CoagulationIntra=0.0;
 
 //Funcion k(s,r,m):
@@ -1944,13 +1951,16 @@ float NMax_Metabolic;
 					//pMetabolic=1.5*(float)s[i][j]/es->Max_Metabolic;
 				//}else{
 					//pMetabolic = modelo->metabolic_factor*(pow((float)(es->individuals[N].size + es->individuals[N].health), 2.0))/es->Max_Metabolic;
-					//pMetabolic = M(es->individuals[N],modelo)/es->Max_Metabolic;
-					pMetabolic = modelo->M[es->individuals[N].size]/es->Max_Metabolic;
+					pMetabolic = M(es->individuals[N],modelo)/es->Max_Metabolic;
+					//pMetabolic = modelo->M[es->individuals[N].size]/es->Max_Metabolic;
+					//printf("M: %f, vs : %f\n", M(es->individuals[N],modelo), modelo->M[es->individuals[N].size] );
 				//}				
 			/////	
 			#ifdef SOI
-				es->individuals[N].metabolism_float -= pMetabolic;
-				es->control2_float = pMetabolic;
+				#ifdef INTEGER_EFFICIENCY
+					es->individuals[N].metabolism_float -= pMetabolic;
+					es->control2_float = pMetabolic;
+				#endif
 			#else
 				if(Rand <= pMetabolic)  //Cuento las necesidades metabolicas.
 				{
@@ -1990,11 +2000,12 @@ float NMax_Metabolic;
 			if(Rand<=(pDead + pCreacion + pCoagulation1))  //coagulacion
 			{			
 				//es->individuals[N].radio=modelo->coagulation_radio_factor*sqrtf((float)(es->individuals[N].size)); //ratio between radio and size of individual
-				int ResourcesScale = modelo->ResourcesScale;
+				float ResourcesScale = modelo->ResourcesScale;
 				double Oval,Xval,Rand2;
 				sitio competingSite;
-				int ne,competingRatio;
-				Rand2 = F_JKISS();
+				int ne;
+				float competingRatio;
+				//Rand2 = F_JKISS();
 				
 				#ifdef VIRTUAL_GRID
 				double pResource=modelo->resource_rate;
@@ -2052,12 +2063,12 @@ float NMax_Metabolic;
 					
 					if(0 < s[competingSite.i][competingSite.j])
 					{
-						competingRatio = es->individuals[es->INDICE[competingSite.i][competingSite.j]].radio;			
-						overlapArea = CircleOverlap(es->SO[N],es->individuals[N].radio,competingSite,competingRatio,ResourcesScale);
+						competingRatio = es->individuals[es->INDICE[competingSite.i][competingSite.j]].radio_float;			
+						overlapArea = CircleOverlap(es->SO[N],es->individuals[N].radio_float,competingSite,competingRatio,ResourcesScale);
 						if(overlapArea > 0.0)
 						{
-							Oval=pow(0.5*(double)es->individuals[N].size , modelo->competitionAsymetry);
-							Xval=pow(0.5*(double)es->individuals[es->INDICE[competingSite.i][competingSite.j]].size, modelo->competitionAsymetry);
+							Oval=pow(0.5*es->individuals[N].size_float , modelo->competitionAsymetry);
+							Xval=pow(0.5*es->individuals[es->INDICE[competingSite.i][competingSite.j]].size_float, modelo->competitionAsymetry);
 							Resource += (Oval/(Oval + Xval))*(overlapArea);
 							partialArea -= overlapArea; 
 						}
@@ -2065,25 +2076,26 @@ float NMax_Metabolic;
 				}
 				
 					Resource += partialArea;
-					Resource *= (modelo->resource_rate); // - 0.2*Rand2);
-					//Resource -= (15*ResourcesScale*ResourcesScale*Rand2);
-					es->individuals[N].metabolism_float += Resource;
-					es->control_float=Resource;
+					Resource *= (modelo->resource_rate); // - 0.2*Rand2);					
+					es->control_float=Resource;				
+					es->individuals[N].size_float+=modelo->growth_constant*(Resource - pMetabolic)/pow(es->individuals[N].size_float, 1.66666);
+					es->individuals[N].radio_float=R(es->individuals[N], modelo);
 					
 				#else			
 					es->individuals[N].metabolism +=1;
 					es->control=1;
 				#endif		
+				#ifdef INTEGER_EFFICIENCY
+				es->individuals[N].metabolism_float += Resource;
 						if(es->individuals[N].metabolism_float >= modelo->meta_needs[es->individuals[N].size] )		// Si he llenado las necesidades de metabolizmo crezco o sano
-						{
+						{	
 							#ifdef HEALTH_TRACK	
 							if(es->individuals[N].health==0){		//Si esta sano a nivel establecido crezco
 							#endif
 								increment=(int)(es->individuals[N].metabolism_float/modelo->meta_needs[es->individuals[N].size]); 
 								es->individuals[N].size+=increment;
 								es->individuals[N].metabolism_float -= ((float)increment)*modelo->meta_needs[es->individuals[N].size];
-								//es->individuals[N].metabolism_float =0.0;
-								es->individuals[N].radio_float=modelo->R[es->individuals[N].size];
+								//es->individuals[N].metabolism_float =0.0;							
 								es->individuals[N].radio=es->individuals[N].radio_float;
 								//#pragma omp master
 								//{
@@ -2110,6 +2122,7 @@ float NMax_Metabolic;
 								}
 								#endif			
 						}
+				#endif
 				#ifdef VIRTUAL_GRID	
 				}else{ //Si no hay comida, checo si corresponde morir o enfermarse.
 				#endif
@@ -2297,10 +2310,11 @@ float Integra(Float1D_MP *Funcion, int inicial, int final)
 return Resultado;
 }
 
-float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
+
+float CircleOverlap(sitio O,float rO,sitio T, float rT, float scale)
 {
 	float a,s1,s2,d,Area;
-	d=scale*sqrt((O.i-T.i)*(O.i-T.i) + (O.j-T.j)*(O.j-T.j));
+	d=scale*sqrt((O.i-T.i)*(O.i-T.i) + (O.j-T.j)*(O.j-T.j)); 
 	if(d>(rO+rT))
 	{
 		return 0.0;
@@ -2320,9 +2334,10 @@ float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale)
 return Area;
 }
 
+
 float IntegraAC(Float1D_MP *Function, int r1, int r2,double scale, int time)
 {
-	int ResourcesScale = scale;
+	float ResourcesScale = scale;
 	if(Function->NoEnsambles>0)
 	{
 		float Result=0.0;

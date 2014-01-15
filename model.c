@@ -5,11 +5,8 @@
 	#define K(individual, Model) (Model->coagulation_factor * (double)((individual.radio)*(individual.radio)))
 #endif
 
-//#define R(individual, Model) (Model->coagulation_radio_factor*pow((double)(individual.size), 0.375))
-//#define M(individual, Model) (Model->metabolic_factor*(double)(individual.size))
-
-#define R(individual, Model) (Model->coagulation_radio_factor*individual.size/2.0)
-#define M(individual, Model) (Model->metabolic_factor*pow((double)(individual.size),2.6666))
+#define R(individual, Model) (individual.size_float/2.0)
+#define M(individual, Model) (Model->metabolic_factor*pow(individual.size_float,2.6666))
 
 
 

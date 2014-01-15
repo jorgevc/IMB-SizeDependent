@@ -44,6 +44,8 @@ int health;
 sitesList neighbours;
 float radio_float;
 float metabolism_float;
+float size_float;
+int index;
 } Individual;
 
 /** Contains the state of the system(lattice). */
@@ -125,16 +127,16 @@ int RadioBirth;
 double intra_coagulation;
 double coagulation_factor;
 double coagulation_exp;
-double metabolic_factor;
+float metabolic_factor;
 double coagulation_radio_exp;
 double coagulation_radio_factor;
 double metabolic_exp;
 double health_factor;
 double resource_rate;
-int ResourcesScale;
+float ResourcesScale;
 double competitionAsymetry;
 int min_health;
-int growth_constant;
+float growth_constant;
 float* meta_needs;
 float* R;
 float* M;
@@ -514,7 +516,7 @@ void InitRate_log(Rate_log *rate,const int Size);
 void SumRate_log(Rate_log *origin, Rate_log *target);
 void FreeRate_log(Rate_log *rate);
 
-float CircleOverlap(sitio O,int rO,sitio T, int rT, int scale);
+float CircleOverlap(sitio O,float rO,sitio T, float rT, float scale);
 
 void FilterMinDistance(estado *es,int min_distance);
 float IntegraAC(Float1D_MP *Function, int r1, int r2,double scale,int time);

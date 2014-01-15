@@ -22,7 +22,7 @@ int i,j;
 		for(j=1;j<=NDY;j++)
 		{
 			if(s[i][j]>0){ 
-				fprintf(archivo,"%d %d %d %d\n",i,j,es->individuals[es->INDICE[i][j]].species,es->individuals[es->INDICE[i][j]].size); 
+				fprintf(archivo,"%d %d %d %d\n",i,j,es->individuals[es->INDICE[i][j]].species,(int)es->individuals[es->INDICE[i][j]].size_float); 
 				}
 			//else{fprintf(archivo,"No hay datos para: %d   %d \n",i,j);}
 		}
