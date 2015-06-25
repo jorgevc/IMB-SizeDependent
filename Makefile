@@ -1,3 +1,6 @@
+Competencia: Competencia.c libPP_6.1.c EntSalArb_MP_Comp.c GNA.c
+	gcc -fopenmp -O3 Competencia.c libPP_6.1.c EntSalArb_MP_Comp.c GNA.c -lfftw3 -lm -o crece.out
+
 MCMC: MCMC.c MLE.c libPP_6.1.c EntSalArb_MP_Comp.c GNA.c model.c
 	gcc -fopenmp -O3 MCMC.c libPP_6.1.c EntSalArb_MP_Comp.c GNA.c -lfftw3 -lm -o mcmc.out
 
@@ -13,8 +16,7 @@ BrownRemasterOMP: BrownRemasterOMP.c libPP_5.0.c EntSalArb_MP.c GNA.c ControlDin
 CargaYCalculos: CargaYCalculos.c libPP_5.0.c EntSalArb_MP.c GNA.c
 	gcc -fopenmp CargaYCalculos.c libPP_5.0.c EntSalArb_MP.c GNA.c -lfftw3 -lm 
 	
-Competencia: Competencia.c libPP_6.1.c EntSalArb_MP_Comp.c GNA.c
-	gcc -fopenmp -O3 Competencia.c libPP_6.1.c EntSalArb_MP_Comp.c GNA.c -lfftw3 -lm -o crece.out
+
 
 BrownRemaster: BrownRemaster.c libPP_4.0.c EntSalArb.c GNA.c
 	gcc BrownRemaster.c libPP_4.0.c EntSalArb.c GNA.c -lm

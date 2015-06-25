@@ -29,9 +29,9 @@ run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica
 //run.T_max=(run.grid_units*run.grid_units)*802;
 //run.T_max=(run.grid_units*run.grid_units)*50000;
 //run.T_max=(run.grid_units*run.grid_units)*20000;
-run.T_max=30000;
-run.NoEnsambles=100;
-int const write_interval=2000;
+run.T_max=3001;
+run.NoEnsambles=200;
+int const write_interval=100;
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
 run.Model.ResourcesScale = 1.0; //conversion factor to the imaginary resources grid or SOI resolution
@@ -71,7 +71,7 @@ run.Model.growth_constant=(3.0*pow(run.Model.Cr,8.0/3.0))/(pow(2.0,1.0/3.0)*run.
 //run.Model.growth_constant=5;
 run.Model.resource_rate=1.0/coagulation_units; // 
 //run.Model.resource_rate=0.95;
-run.initialMeanDistance=run.grid_units*12;
+run.initialMeanDistance=run.grid_units*1;
 run.initialMinSeparation=1000;
 
 run.Model.meta_needs=SetMetaNeeds(run.Model, Area_units);
@@ -103,7 +103,7 @@ modelo = run.Model;
 
 Individual indv;
 indv.species=1;
-indv.size_float=5;
+indv.size_float=2.5;
 indv.size=run.size_units*10.0*indv.size_float;
 indv.radio_float=R(indv, (&modelo));
 indv.radio=indv.radio_float;
@@ -146,7 +146,7 @@ Float1D_MP MP_CorrelacionG;
 	
 
 char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM/Ene6/1");
+	sprintf(contenedor,"DATOS_TAM");
 	CreaContenedor(contenedor,run);
 	
 Float1D_MP meanDensity;
@@ -204,20 +204,23 @@ FILE *file;
 		//	GeneraEstadoAleatorioTamano(&e[Par], 1.0/(float)run.initialMeanDistance , indv);		
 		//	FilterMinDistance(&e[Par], run.initialMinSeparation);
 			
-		//		for(i=separation;i<NDX;i+=separation)
-			//	{
-				//	for(j=separation;j<NDY;j+=separation)
-					//{
-						//InsertIndividualAt(&e[Par],i,j,indv,1);
-					//}
-				//}
-				
-				while(e[Par].ON < 55)
+				for(i=separation;i<NDX;i+=30*separation)
 				{
-					i=I_JKISS(1,NDX);
-					j=I_JKISS(1,NDY);
-					InsertIndividualAt(&e[Par],i,j,indv,0);
+					for(j=separation;j<NDY;j+=30*separation)
+					{
+						if(i+separation < NDX && j<NDY){
+							InsertIndividualAt(&e[Par],i,j,indv,1);
+							InsertIndividualAt(&e[Par],i+separation,j,indv,1);
+						}
+					}
 				}
+				
+				//while(e[Par].ON < 55)
+				//{
+					//i=I_JKISS(1,NDX);
+					//j=I_JKISS(1,NDY);
+					//InsertIndividualAt(&e[Par],i,j,indv,0);
+				//}
 			
 			setMaxMetabolic(&e[Par],&modelo);		
 			}
@@ -342,6 +345,25 @@ FILE *file;
 					{
 						sprintf(distT,"DT_%d",i);	
 						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
+					
+						if(i==3001){
+							int z;
+							float val,Dprev,Dnext,yval_f,yval_b;
+							for(z=1;z<TamDist_1.i_max;z++)
+							{
+								yval_f=(TamDist_1.array[z])*(pow(z*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
+								yval_b=(TamDist_1.array[z-2])*(pow((z-2)*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
+								Dprev=yval_f - yval_b;
+								yval_f=(TamDist_1.array[z+2])*(pow((z+2)*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
+								yval_b=(TamDist_1.array[z])*(pow(z*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
+								Dnext=yval_f - yval_b;
+								if(Dprev > 0.0 && Dnext <=0.0 && yval_b >1.0)
+								{
+									val = 2.0*4.7*pow(z*TamDist_1.index_units,(3.0/8.0));
+									printf("yval = %f , max in = %f\n", yval_b ,val);
+								}
+							}
+						}
 						
 					//	sprintf(distT,"CumulativeDT_%d",i);
 					//	GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
