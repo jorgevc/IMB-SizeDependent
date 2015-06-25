@@ -12,31 +12,26 @@ Copyright 2012 Jorge Velazquez
 
 
 main(){	
-#ifdef VIRTUAL_GRID
-printf("VIRUAL_GRID=TRUE\n");
+#ifdef VIRTUAL_GRID			///< The algorithm should be define at top of file "libPP_6.1.h"
+printf("VIRUAL_GRID=TRUE\n");		///< Prints the algorithm being used "Virtual grid of resources"
 #endif
 #ifdef SOI
-printf("SOI=TRUE\n");
+printf("SOI=TRUE\n");		///< Prints the algorithm being used "Zone of Influence"
 #endif
 
-///////////////////////////Inicializa parametros de la simulacion
-runDescriptor run;
-run.X=200;  	//unidades "fisicas"
-run.Y=run.X;
-run.grid_units=1.0; //factor de conversion de unidades "fisicas" a lado de celda
-run.size_units=1.0; //numero de unidades en computo que hacen una unidad "fisica" de tamano (divisor de conversion)
-
-//run.T_max=(run.grid_units*run.grid_units)*802;
-//run.T_max=(run.grid_units*run.grid_units)*50000;
-//run.T_max=(run.grid_units*run.grid_units)*20000;
-run.T_max=3001;
-run.NoEnsambles=200;
-int const write_interval=100;
+/** This section initialize the simulation parameteres */
+runDescriptor run;		///< structure containing the simulation parameters
+run.X=200; 			 	///< X lenght of the simulated field
+run.Y=run.X;			///< Y lenght of the simulated field
+run.grid_units=1.0; 	///< convertion factor between lenght units to virtual grid cell lenght.
+run.size_units=1.0; 	///< convertion factor between lenght units and virtual tree size units.
+run.T_max=3001;			///< Number of monte carlo sweeps in the simulation
+run.NoEnsambles=200;	///< Number of simulations in the ensemble of simulations.
+int const write_interval=100;	///< Number of monte carlo sweeps between writting state to disk.
 
 //in this case the Area_units and Length_units are units of the imaginary resources grid.
-run.Model.ResourcesScale = 1.0; //conversion factor to the imaginary resources grid or SOI resolution
-//run.Model.competitionAsymetry = (8.0/3.0)*1.6212;
-run.Model.competitionAsymetry = 80.0;
+run.Model.ResourcesScale = 1.0; ///< convertion factor between lenght units of resource grid and simulation length.
+run.Model.competitionAsymetry = 80.0;	///< The asymetry of competition "p".
 double const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
@@ -47,214 +42,139 @@ run.Model.coagulation_factor = coagulation_units*1.0;
 #else
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 #endif
-//run.Model.coagulation_factor=((Area_units/pow(run.size_units,run.Model.coagulation_exp))*1.0);
 
-run.Model.coagulation_radio_exp=1.0; //cambiar tambien en model.c  :0.375
-run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp;  // cambiar tambien en model.c
-run.Model.Cr=1.0;
-run.Model.coagulation_radio_factor=1.0;
-run.Model.metabolic_exp=2.6666; //cambiar tambien en model.c
-float dgrmax=30.0;
-//run.Model.Cm=(3.1416*pow(2.0,2.0/3.0)*pow(run.Model.Cr,8.0/3.0))/(3.0*pow(dgrmax,2.0/3.0));
+run.Model.coagulation_radio_exp=1.0;  ///< Alometric relation: exponent relating steem radio and canopy radio 
+run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp; 
+run.Model.Cr=1.0;		///< Alometric relation: 
+run.Model.coagulation_radio_factor=1.0; ///< Factor between resource intake radio and canopy radio 
+run.Model.metabolic_exp=2.6666; ///< Alometric relation: exponent relating dbh and biomass (8/3)
 run.Model.Cm=0.4;
-float dmax=2.0*pow(3.1416,3.0/2.0)*pow(run.Model.Cr,4.0)/pow(run.Model.Cm,3.0/2.0);
-printf("Cm=%f , dmax=%f\n",run.Model.Cm,dmax);
-//run.Model.metabolic_factor=coagulation_units*(Area_units/pow(run.size_units,run.Model.metabolic_exp))*run.Model.Cm; //0.75; 
-// 0.2 anterior 1.25
 run.Model.metabolic_factor=(run.Model.Cm)/pow(2.0*run.Model.Cr,8.0/3.0);
-run.Model.health_factor=0.0; //usandose lineal proporcional al tamano (adimensional) fraccion de biomasa que puede "danarse" antes de enfermar. 
-// con 2.0 salen buenos resultados para U shape de dead rate.
+run.Model.health_factor=0.0; ///< Fraction of allowed missed biomass before individual dies.
 run.Model.Cg=0.5;
-run.Model.growth_constant=(3.0*pow(run.Model.Cr,8.0/3.0))/(pow(2.0,1.0/3.0)*run.Model.Cg); //  needed resources per unit size increse.
+run.Model.growth_constant=(3.0*pow(run.Model.Cr,8.0/3.0))/(pow(2.0,1.0/3.0)*run.Model.Cg); ///<  needed resources per unit size increse.
+run.Model.resource_rate=1.0/coagulation_units; 
+run.initialMeanDistance=run.grid_units*1;  ///< mean distance between individuals (when random pattern is generated)
+run.initialMinSeparation=1;	///< Minimun separation between individual in a random pattern (filter)
+run.Model.birth_rate=0.0;	///< birth rate of new individuals
+run.Model.RadioBirth=15;	///< radius of new offsprings from parent 
+run.Model.dead_rate=0.0;	///< instrinsic dead rate of individuals
+run.Model.intra_coagulation=0.0; ///< deprecated
+Individual indv;
+indv.species=1;			///< species type
+indv.size_float=2.5;	///< biomass of new individuals floating point variable
+indv.size=run.size_units*10.0*indv.size_float;
+indv.radio_float=R(indv, (&modelo));  ///< dbh radio of individuals
+indv.radio=indv.radio_float;	
+indv.metabolism=0;	///< deprecated, used to improve time step performance
+indv.health=0; 		///< deprecated, used to track individual healt
+omp_set_num_threads(4);		///< sets the number of threads used by omp
 
-//run.Model.growth_constant=1.0;
-//run.Model.growth_constant=5;
-run.Model.resource_rate=1.0/coagulation_units; // 
-//run.Model.resource_rate=0.95;
-run.initialMeanDistance=run.grid_units*1;
-run.initialMinSeparation=1000;
-
-run.Model.meta_needs=SetMetaNeeds(run.Model, Area_units);
-run.Model.R=SetR(run.Model, Length_units);
-run.Model.M=SetM(run.Model, Area_units);
-
-#ifdef HEALTH_TRACK	
-run.Model.min_health=0;
-#else
-run.Model.min_health=0;
-#endif
-
-
-//run.Model.birth_rate=0.5;
-run.Model.birth_rate=0.0;
-run.Model.RadioBirth=15;
-run.Model.dead_rate=0.0;
-run.Model.intra_coagulation=0.0;
-
+/** internal initialization variables **/
 float const separation=(float)run.initialMeanDistance;
-////
 int T_max = run.T_max;
 int NoEnsambles=run.NoEnsambles;
-
-
+run.Model.meta_needs=SetMetaNeeds(run.Model, Area_units); 
+run.Model.R=SetR(run.Model, Length_units);
+run.Model.M=SetM(run.Model, Area_units);
 model modelo;
 modelo = run.Model;
-
-
-Individual indv;
-indv.species=1;
-indv.size_float=2.5;
-indv.size=run.size_units*10.0*indv.size_float;
-indv.radio_float=R(indv, (&modelo));
-indv.radio=indv.radio_float;
-indv.metabolism=0;
-indv.health=0; 
-
-printf("tam: %d\n",indv.radio);
-
 int NDX=(run.X*run.grid_units)+1;
 int NDY=(run.Y*run.grid_units)+1;
 double delta_s=1.0/(run.size_units);
+///************************************************///
 
-omp_set_num_threads(4);
-
-////////////////////////////Termina Inicializa de paremtros de la simulacion
-/////////////////////////////////////Prepara CONTENEDOR para escribir DATOS:
-
-
-
-//Float2D_MP MP_RhoVsT_1;		
-//	int MaximoTamano = 1;
-//		InicializaFloat2D_MP(&MP_RhoVsT_1, T_max+10, MaximoTamano, 0);
-		
-//Dist_MP MP_RhoDist_1;
-//float TamParticion=0.0001;
-//	InicializaDist_MP(&MP_RhoDist_1, TamParticion);
+/** Initialization of sturctures that keep the resoults **/
 	
-Float1D_MP TamDist_1;
-		InicializaFloat1D_MP(&TamDist_1, T_max+10);
+Float1D_MP TamDist_1;		///< Instance of Float1D_MP that will store the size distribution at each steep
+		InicializaFloat1D_MP(&TamDist_1, T_max+10);		///< initialization function of Float1D structures.
 		
-Float1D_MP CumulativeTamDist_1;
+Float1D_MP CumulativeTamDist_1;		///< instance of Float1D_MP that can store the comulative size distribution
 		InicializaFloat1D_MP(&CumulativeTamDist_1, T_max+10);
 		
-//Float1D_MP Experiment_1;
-	//	InicializaFloat1D_MP(&Experiment_1, 41);
+Float1D_MP MP_CorrelacionG;			///< instance of Float1D_MP that can store a pair correlation 
+	InicializaFloat1D_MP(&MP_CorrelacionG, NDX);  ///<  initialization
+	ResetFloat1D_MP(&MP_CorrelacionG);		///< we ensure it is full of zeros
 
-Float1D_MP MP_CorrelacionG;
-	InicializaFloat1D_MP(&MP_CorrelacionG, NDX);
-	ResetFloat1D_MP(&MP_CorrelacionG);
+char contenedor[150];					
+	sprintf(contenedor,"DATOS_TAM");		///< Name of the directory where data is going to be stored
+	CreaContenedor(contenedor,run);			///< Creates the directory of the data and write a file with some parameters of the simulation in it. 
 	
-
-char contenedor[150];
-	sprintf(contenedor,"DATOS_TAM");
-	CreaContenedor(contenedor,run);
+Float1D_MP meanDensity;			///< Instance of Float1D_MP to keep track of the mean density evolution
+	InicializaFloat1D_MP(&meanDensity, T_max+10);	///<  initialization
 	
-Float1D_MP meanDensity;
-	InicializaFloat1D_MP(&meanDensity, T_max+10);
+Float1D_MP meanSize;			///< Instance of Float1D_MP to keep track of the mean size evolution
+	InicializaFloat1D_MP(&meanSize, T_max+10);		///< initialization
 	
-Float1D_MP meanSize;
-	InicializaFloat1D_MP(&meanSize, T_max+10);
-	
-float meanResourceG[T_max+10];
-	
-	
-float time_map[T_max+10];
-time_map[0]=0.0;
+float time_map[T_max+10];	///< To map monte-carlo sweep with fisical time
+time_map[0]=0.0;		///< initialization
 
-Rate_log Grate[6];
-InitRate_log(&Grate[5],10);
-InitRate_log(&Grate[0],50);
+Rate_log Grate[6];			///< Structure that can be passed to the monte carlo sweep to keep track of instantaneous rates. (used to mesoure whatever you need)
+InitRate_log(&Grate[5],10);	///< Initialization
+InitRate_log(&Grate[0],50);	///< Initialization
 
-FILE *file;
+FILE *file;		///< handle the files to write data to disk
 
-//char contenedorLec[150];	
-	//sprintf(contenedorLec,"BrwRemNich0MP_(B,D,C,RB,RC)@(%1.3f,%1.3f,%1.3f,%d,%d)_(NDX,Tmax)@(%d,%d)",Birth1,Dead1,Coagulation1,RadioBirth1,RadioCoa1,NDX,T_max);
-/////////////////////////////////////Termina Prepara CONTENEDOR para escribir DATOS
+/******************************************************/
 
-///////////////////////////////////// Estado INICIAL:
-
-	#pragma omp parallel			///////INICIA PARALLEL
+	#pragma omp parallel			///< begin of parallel code. This code will be done for each thread 
 	{
-		
-		int num_threads = omp_get_num_threads();
-		int id = omp_get_thread_num();
-		int MaxPar = NoEnsambles/num_threads;
-		#pragma omp master
+		int num_threads = omp_get_num_threads();	///< number of threads running
+		int id = omp_get_thread_num();				///< id of 'this' thread
+		int MaxPar = NoEnsambles/num_threads;		///< Number of simulation that each thread will handle
+		#pragma omp master							///< The remainer simulations will be handle by the master thread
 		{
-				MaxPar+= NoEnsambles - MaxPar * num_threads;	 
+				MaxPar+= NoEnsambles - MaxPar * num_threads;	 ///< Adding the remainer simulations to the master thread
 		}
-		estado e[MaxPar];
-		//MaxPar=CargaEstado_MP(contenedorLec,"T_8000",e,NDX,NDY,id,MaxPar);
-		
-		int Par;
-		for(Par=0;Par<MaxPar;Par++)
+		estado e[MaxPar];						///< Struct "estado" stores the state of each simulation (positions, sizes, time)
+		int Par;				///< Dummy variable used for looping.
+		for(Par=0;Par<MaxPar;Par++)				///< for each simulated field
 		{
-			AlojaMemoria(&e[Par], NDX, NDY);
-			ResetEstado(&e[Par]);
-			e[Par].units=run.grid_units;
-			e[Par].size_units=run.size_units;
+			AlojaMemoria(&e[Par], NDX, NDY);	///< allocate memory for the field (state of the simualtion: positions, sizes, time)
+			ResetEstado(&e[Par]);		///< initialization 
+			e[Par].units=run.grid_units;	///< each simulation could have it's own units (not really used)
+			e[Par].size_units=run.size_units; ///< each simulation could have it's own units (not really used)
 		}
-
-		init_JKISS(); //Inicializa la semilla de cada proceso.
-		
+		init_JKISS(); ///< Initialization of the random number generator "JKISS"
 			
-		int i,j;
-			for(Par=0;Par<MaxPar;Par++)
+		int i,j;		///< dummy variables used for looping
+		
+ /** INITIAL POSITIONS of individuals */
+			for(Par=0;Par<MaxPar;Par++)			///< For each fiel (simulation) generate the INITIAL STATE
 			{
-		//	GeneraEstadoAleatorioTamano(&e[Par], 1.0/(float)run.initialMeanDistance , indv);		
-		//	FilterMinDistance(&e[Par], run.initialMinSeparation);
-			
-				for(i=separation;i<NDX;i+=30*separation)
-				{
-					for(j=separation;j<NDY;j+=30*separation)
-					{
-						if(i+separation < NDX && j<NDY){
-							InsertIndividualAt(&e[Par],i,j,indv,1);
-							InsertIndividualAt(&e[Par],i+separation,j,indv,1);
-						}
-					}
-				}
-				
-				//while(e[Par].ON < 55)
+		/** Random initial position with specific mean and minimun distance **/
+		//	GeneraEstadoAleatorioTamano(&e[Par], 1.0/(float)run.initialMeanDistance , indv);	///< Random initial specifing the mean 
+		//	FilterMinDistance(&e[Par], run.initialMinSeparation);	///< filter of minimun distance
+		/**********************************************************/
+		/** Grid initial positions **/
+				//for(i=separation;i<NDX;i+=30*separation)
 				//{
-					//i=I_JKISS(1,NDX);
-					//j=I_JKISS(1,NDY);
-					//InsertIndividualAt(&e[Par],i,j,indv,0);
+					//for(j=separation;j<NDY;j+=30*separation)
+					//{
+						//if(i+separation < NDX && j<NDY){
+							//InsertIndividualAt(&e[Par],i,j,indv,1);
+							//InsertIndividualAt(&e[Par],i+separation,j,indv,1);
+						//}
+					//}
 				//}
+		/*********************************************************/		
+		/** Random initial positions specifing number of individuals */
+				while(e[Par].ON < 55)
+				{
+					i=I_JKISS(1,NDX);
+					j=I_JKISS(1,NDY);
+					InsertIndividualAt(&e[Par],i,j,indv,0);
+				}
+		/**************************************************************/
 			
-			setMaxMetabolic(&e[Par],&modelo);		
-			}
+		setMaxMetabolic(&e[Par],&modelo);		/// internal use. sets the frecuency of the poisson events in the simulation. 
+		}
 
-		
-	/////////////////////////////////////Termina Estado INICIAL
-	//////////////////////////Prepara Contenedor en Memoria de cada proceso Para Mejorar rendimiento (optimizar el uso de cache de cada procesador)
-
-//		Float2D_MP MP_RhoVsT;	
-//				InicializaFloat2D_MP(&MP_RhoVsT, T_max, MaximoTamano, MaxPar);
-
-		Float1D_MP TamDist;
+		Float1D_MP TamDist;				///< Temporal array to store size distribution to take advantage of each core cache. 
 		InicializaFloat1D_MP(&TamDist, T_max+100);
-		//Dist_MP MP_RhoDist;
-		//	InicializaDist_MP(&MP_RhoDist, TamParticion);
-			
-		//	Float1D_MP TamDist;
-		//	InicializaFloat1D_MP(&TamDist, T_max*2);
-			
-		//	Float2D_MP MP_Corr2D;
-		//	InicializaFloat2D_MP(&MP_Corr2D, NDX, NDY, 0);
-			
-		//	Float1D_MP MP_Correlacion;
-		//	InicializaFloat1D_MP(&MP_Correlacion, NDX);
-			
-	/////////////////////////////////Termina prepara Contenedor MEMORIA de cada PROCESO
-
-			//for(Par=0;Par<MaxPar;Par++)
-			//{
-				//ActualizaRhoVsT_MP(&e[Par],&MP_RhoVsT,NULL);
-				//ActualizaRecursos_MP(&e[Par],&MP_RhoVsT);	
-			//}
 			
 	//////////////////////////////Barrido Monte CARLO:
+	/** Initialization of temporal internal variables of each thread to improve memory efficiency **/
 		char distT[50];
 		char corrName[50];
 		Rate_log rate[6];
@@ -266,17 +186,6 @@ FILE *file;
 		InitRate_log(&rate[4],MaximoTamanoIni);
 		InitRate_log(&rate[5],rate[2].i_max+100);
 		
-		Grupo originGroup,targetGroup;
-		originGroup.TIPO=0; //all species
-		originGroup.NEG=0; //lugares ocupados (contrario a lugares vacios)
-		targetGroup.TIPO=0;
-		targetGroup.NEG=0;
-		CorrDescriptor corrEspecification;
-		corrEspecification.MeanSquare=0;
-		corrEspecification.NoEnsambles=MaxPar;
-		corrEspecification.NoMuestras=1;
-		corrEspecification.Muestra=0;
-		Individual indvTmp,indvTmp2;
 		indv.species=1;
 		int s1,s2,r2;
 		int done=0;
@@ -302,39 +211,8 @@ FILE *file;
 				time_map[e[0].T]=e[0].Meta_T;
 			}
 			#pragma omp barrier
-			//ActualizeCumulativeDensity(&TamDist,(meanDensity.array[TamDist.T]*(time_map[i]-time_map[i-1]))/(NoEnsambles*NDX*NDY),&CumulativeTamDist_1);
-			
 				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
 				{
-					//for(Par=0;Par<MaxPar;Par++)
-					//{
-					//	ActualizaDistTamano_MP(&e[Par], &TamDist_1, 'A');
-					//}
-					
-					///// meanK
-					//#pragma omp single
-					//{
-						//FreeRate_log(&Grate[5]);
-						//InitRate_log(&Grate[5],rate[5].i_max+200);
-					//}
-					//SumRate_log(&rate[5], &Grate[5]);
-					//FreeRate_log(&rate[5]);
-					//InitRate_log(&rate[5],rate[2].i_max);
-					//#pragma omp barrier
-					//#pragma omp master
-					//{			
-						//sprintf(distT,"%s/MeanK",contenedor);
-								//file=fopen(distT, "a");						
-								//for(j=1;j<=Grate[5].i_max;j++){
-									//if(Grate[5].NoEnsambles[j]>9)
-									//{
-									//fprintf(file,"%f %d %f \n",((float)j)*delta_s, e[0].T , delta_s*Grate[5].Growth[j]/(coagulation_units*(float)Grate[5].NoEnsambles[j]));
-									//}
-								//}
-								//fclose(file);	
-					//}				
-					//	
-					//distribution
 					#pragma omp single
 					{
 						ResetFloat1D_MP(&TamDist_1);
