@@ -176,7 +176,6 @@ FILE *file;		///< handle the files to write data to disk
 	//////////////////////////////Barrido Monte CARLO:
 	/** Initialization of temporal internal variables of each thread to improve memory efficiency **/
 		char distT[50];
-		char corrName[50];
 		Rate_log rate[6];
 		int MaximoTamanoIni = 100;
 		InitRate_log(&rate[0],MaximoTamanoIni);
@@ -184,257 +183,53 @@ FILE *file;		///< handle the files to write data to disk
 		InitRate_log(&rate[2],MaximoTamanoIni);
 		InitRate_log(&rate[3],MaximoTamanoIni);
 		InitRate_log(&rate[4],MaximoTamanoIni);
-		InitRate_log(&rate[5],rate[2].i_max+100);
-		
+		InitRate_log(&rate[5],rate[2].i_max+100);		
 		indv.species=1;
-		int s1,s2,r2;
-		int done=0;
-		float Interaction,s1val,s2val,f, Area,Iss,instantDeadRate,cumDeadRate;
-		FILE *fileKappa;
-		FILE *fileCorr;
-		
+
+	/** Loop for each time steep **/
 		for(i=1;i<=T_max;i++)
 		{			
-			for(Par=0;Par<MaxPar;Par++)
+			for(Par=0;Par<MaxPar;Par++) ///< loop for each simulation
 			{
-				BarrMCcRyCampTamano(&e[Par], run.Model.resource_rate, &modelo, rate);			
-				ActualizaDistTamano_MP(&e[Par], &TamDist, 'A');				
+				BarrMCcRyCampTamano(&e[Par], run.Model.resource_rate, &modelo, rate); ///< A monte carlo sweep			
+				ActualizaDistTamano_MP(&e[Par], &TamDist, 'A');				///< Store the size distribution in TamDist
 				#pragma omp atomic
-				meanDensity.array[e[Par].T]+=e[Par].ON;
-			}
-			
+				meanDensity.array[e[Par].T]+=e[Par].ON;  		///< Store the mean density of all the simulations
+			}			
 			#pragma omp barrier
 			#pragma omp atomic
-			meanSize.array[TamDist.T]+=TamDist.array[0];
+			meanSize.array[TamDist.T]+=TamDist.array[0]; 	///< Store the the mean size of all the simulations
 			#pragma omp master
 			{
-				time_map[e[0].T]=e[0].Meta_T;
+				time_map[e[0].T]=e[0].Meta_T;		///< Store the map between a computer time steep and fisical time.
 			}
 			#pragma omp barrier
-				if((i-(i/write_interval)*write_interval)==1)    //Inicializa cada write_interval
+				if((i-(i/write_interval)*write_interval)==1)    ///< write to disk just at certain time steeps
 				{
 					#pragma omp single
 					{
 						ResetFloat1D_MP(&TamDist_1);
 					}
-					SumaFloat1D_MP(&TamDist,&TamDist_1);
+					SumaFloat1D_MP(&TamDist,&TamDist_1);		///< Add the size distribution of each thread to a global size distribution
 					#pragma omp barrier
 					#pragma omp single
 					{
-						sprintf(distT,"DT_%d",i);	
-						GuardaFloat1D_MP(contenedor,distT,&TamDist_1);
-					
-						if(i==3001){
-							int z;
-							float val,Dprev,Dnext,yval_f,yval_b;
-							for(z=1;z<TamDist_1.i_max;z++)
-							{
-								yval_f=(TamDist_1.array[z])*(pow(z*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
-								yval_b=(TamDist_1.array[z-2])*(pow((z-2)*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
-								Dprev=yval_f - yval_b;
-								yval_f=(TamDist_1.array[z+2])*(pow((z+2)*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
-								yval_b=(TamDist_1.array[z])*(pow(z*TamDist_1.index_units,(5.0/8.0))*(8.0/(10.0*2.0*4.7*3.0)));
-								Dnext=yval_f - yval_b;
-								if(Dprev > 0.0 && Dnext <=0.0 && yval_b >1.0)
-								{
-									val = 2.0*4.7*pow(z*TamDist_1.index_units,(3.0/8.0));
-									printf("yval = %f , max in = %f\n", yval_b ,val);
-								}
-							}
-						}
-						
-					//	sprintf(distT,"CumulativeDT_%d",i);
-					//	GuardaFloat1D_MP(contenedor,distT,&CumulativeTamDist_1);
+						sprintf(distT,"DT_%d",i);			///< Name of the file where the size distribution will be written
+						GuardaFloat1D_MP(contenedor,distT,&TamDist_1); ///< Write to disk the global size distribution (all threads and simulations)
 					}
-					////cumulative and instant deadRate
-					//#pragma omp single
-					//{
-						//InitRate_log(&Grate[1],rate[1].i_max);
-					//}
-					//SumRate_log(&rate[1], &Grate[1]);
-					//#pragma omp barrier
-					//#pragma omp master
-					//{
-						//sprintf(distT,"%s/cumDeadR_%d",contenedor,i);
-						////sprintf(distT,"%s/instantDeadR_%d",contenedor,i);
-						//file=fopen(distT, "w");
-						////if(( Grate[1].i_max - Grate[0].i_max ) > 0)
-					////	{
-					////		ReallocRate_log(&Grate[0], Grate[1].i_max - Grate[0].i_max );
-					////	}
-						//for(j=1;j<=Grate[1].i_max;j++){
-							//if(Grate[1].NoEnsambles[j]>0)
-							//{
-							////instantDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j])) - (Grate[0].Growth[j]/((float)Grate[0].NoEnsambles[j]));
-							//cumDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
-							//fprintf(file,"%f %f\n",((float)j)*delta_s, cumDeadRate);
-							//}
-						////	Grate[0].Growth[j]=Grate[1].Growth[j];
-						////	Grate[0].NoEnsambles[j]=Grate[1].NoEnsambles[j];
-						//}
-						//fclose(file);
-						//FreeRate_log(&Grate[1]);
-					//}		
-					//competitive and mature deadRate
-					//if(done == 0 && meanSize.array[i] > 100*NoEnsambles )
-					//{
-						//#pragma omp single
-						//{
-							//InitRate_log(&Grate[1],rate[1].i_max);
-						//}
-						//SumRate_log(&rate[1], &Grate[1]);
-						//#pragma omp barrier
-						//#pragma omp master
-						//{
-							//sprintf(distT,"%s/competitiveDeadR",contenedor);
-							//file=fopen(distT, "w");		
-							//if(( Grate[1].i_max - Grate[0].i_max ) > 0)
-							//{
-								//ReallocRate_log(&Grate[0], Grate[1].i_max - Grate[0].i_max );
-							//}
-							//for(j=1;j<=Grate[1].i_max;j++){
-								//if(Grate[1].NoEnsambles[j]>0)
-								//{
-								//cumDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
-								//fprintf(file,"%f %f\n",((float)j)*delta_s, cumDeadRate);
-								//}
-								//Grate[0].Growth[j]=Grate[1].Growth[j];
-								//Grate[0].NoEnsambles[j]=Grate[1].NoEnsambles[j];
-							//}
-							//fclose(file);
-							//FreeRate_log(&Grate[1]);	
-						//}
-						//done=1;	
-					//}
-					//if(i >= (T_max - write_interval) && done == 1 )
-					//{
-						//#pragma omp single
-						//{
-							//InitRate_log(&Grate[1],rate[1].i_max);
-						//}
-						//SumRate_log(&rate[1], &Grate[1]);
-						//#pragma omp barrier
-						//#pragma omp master
-						//{
-							//sprintf(distT,"%s/matureDeadR",contenedor);
-							//file=fopen(distT, "w");		
-							//for(j=1;j<=Grate[1].i_max;j++){
-								//if(Grate[1].NoEnsambles[j]>0)
-								//{
-									//if(Grate[0].i_max >= j)
-									//{
-									//Grate[1].Growth[j]=Grate[1].Growth[j] - Grate[0].Growth[j];
-									//Grate[1].NoEnsambles[j]=Grate[1].NoEnsambles[j]-Grate[0].NoEnsambles[j];
-									//}
-								//cumDeadRate = (Grate[1].Growth[j]/((float)Grate[1].NoEnsambles[j]));
-								//fprintf(file,"%f %f\n",((float)j)*delta_s, cumDeadRate);
-								//}
-							//}
-							//fclose(file);
-							//FreeRate_log(&Grate[1]);	
-						//}
-						//done=2;	
-					//}
-					//
-					//Analitical Mean Resorce Intake
-					//#pragma omp master
-					//{
-					//sprintf(distT,"%s/kappa_Iss",contenedor);
-					//fileKappa=fopen(distT, "a");
-					//fputs("r1  r2  kappa(Integral)  T\n",fileKappa);
-					
-					//sprintf(corrName,"%s/corr", contenedor);
-					//fileCorr=fopen(corrName, "a");
-					//fputs("r1  r2  r  g  T\n",fileCorr);
-					//}
-					
-					//for(s1=1;s1<=Grate[5].i_max;s1++)
-					//{
-						//if(TamDist_1.array[s1] > 0.0 )
-						//{
-							//indvTmp.size=run.size_units*s1;
-							//indvTmp.radio=R(indvTmp, (&modelo));
-							//Interaction=0.0;
-							//for(s2=1;s2<=Grate[5].i_max;s2++)
-							//{
-								//ResetFloat2D_MP(&MP_Corr2D);
-								//ResetFloat1D_MP(&MP_Correlacion);
-								//originGroup.s=s1;
-								//targetGroup.s=s2;
-								//CFFT_Univ_MP(e, &corrEspecification, &MP_Corr2D, &originGroup, &targetGroup);
-								//if(MP_Corr2D.NoEnsambles > 2)
-								//{
-									//CompactaCorrelacion(&MP_Corr2D, &MP_Correlacion);
-									//SumaFloat1D_MP(&MP_Correlacion,&MP_CorrelacionG);
-								//}
-								//#pragma omp barrier
-								//#pragma omp master
-								//{
-									//s1val=pow((double)s1 , run.Model.competitionAsymetry);
-									//s2val=pow((double)s2 , run.Model.competitionAsymetry);
-									//f = s1val/(s1val + s2val);	
-									//indvTmp2.size=run.size_units*s2;
-									//indvTmp2.radio=R(indvTmp2, (&modelo));
-									//Iss=IntegraAC(&MP_CorrelacionG, indvTmp.radio,indvTmp2.radio,Length_units,i);
-									//Interaction+=(TamDist_1.array[s2]*meanDensity.array[i]*(1-f)*Iss)/((float)(TamDist_1.NoEnsambles*NoEnsambles*NDX*NDY));
-									//if(s1==s2)
-									//{
-										//for(r2=1;r2<=MP_CorrelacionG.i_max;r2++)
-										//{
-										//fprintf(fileCorr,"%d  %d  %d  %f  %d\n",indvTmp.radio,indvTmp2.radio, ((int)Length_units)*r2, MP_CorrelacionG.array[r2], i);
-										//}
-									//}		
-										//if(Iss>0.0)
-										//{
-											//fprintf(fileKappa,"%d  %d  %f  %d\n", indvTmp.radio, indvTmp2.radio, Iss, i);
-										//}
-										
-									//ResetFloat1D_MP(&MP_CorrelacionG);		
-								//}
-							//}
-							//#pragma omp master
-							//{
-							//indvTmp.size=run.size_units*s1;
-							//indvTmp.radio=R(indvTmp, (&modelo));
-							//Area=3.1416*indvTmp.radio*indvTmp.radio;
-							//meanResourceG[s1]=run.Model.resource_rate*(Area - Interaction);
-							//}
-						//}else{
-							//meanResourceG[s1]=0.0;
-						//}
-					//}			
-					//#pragma omp master
-					//{
-						//fclose(fileKappa);	
-						//fclose(fileCorr);
-							//sprintf(distT,"%s/analiticResource",contenedor);
-								//file=fopen(distT, "a");
-								//fputs("s  meanResource  T",file);
-								//for(s1=1;s1<=Grate[5].i_max;s1++){
-									//if(meanResourceG[s1]!=0.0)
-									//{
-										//fprintf(file,"%d  %f  %d\n", s1, meanResourceG[s1], i);
-									//}
-								//}
-								//fclose(file);						
-					//}
-					//
 					// estate
 					#pragma omp master
 					{
-						GuardaEstadoEn(contenedor, &e[0]);
+						GuardaEstadoEn(contenedor, &e[0]);		///< Write to disk the positions and sizes of the individuals of a single field
 					}
 					//
-					init_JKISS();
+					init_JKISS();		///< Re-initialize the random number generation with a true random seed
 				}
 
 		}
-		
-	//////////////////////////////Termina Monte CARLO
-	//LiberaMemoriaFloat2D_MP(&MP_Corr2D);
-	//LiberaMemoriaFloat1D_MP(&MP_Correlacion);
+	/**********************************************/
 
-	#pragma omp single
+	#pragma omp single			///< A single thread should initialize the instance of the global rate 
 	{
 		FreeRate_log(&Grate[0]);
 		InitRate_log(&Grate[0],rate[0].i_max);
@@ -444,78 +239,71 @@ FILE *file;		///< handle the files to write data to disk
 		InitRate_log(&Grate[4],rate[4].i_max);
 	}
 
-	SumRate_log(&rate[0], &Grate[0]);
+	/** Sum each thread rate to a global rate **/
+	SumRate_log(&rate[0], &Grate[0]); 
 	SumRate_log(&rate[1], &Grate[1]);
 	SumRate_log(&rate[2], &Grate[2]);
 	SumRate_log(&rate[3], &Grate[3]);
 	SumRate_log(&rate[4], &Grate[4]);
+	/****************************************/
 
+	/** Free memory of the thread rate structure **/
 	FreeRate_log(&rate[0]);
 	FreeRate_log(&rate[1]);
 	FreeRate_log(&rate[2]);
 	FreeRate_log(&rate[3]);
 	FreeRate_log(&rate[4]);
 	FreeRate_log(&rate[5]);
+	/********************************************/
 	
-	//	#pragma omp master
-	//	{
-	//	SumaFloat2D_MP(&MP_RhoVsT, &MP_RhoVsT_1);
-	//	}
-		
-		//Libera Memoria
 		for(Par=0;Par<MaxPar;Par++)
 		{
-			LiberaMemoria(&e[Par]);
+			LiberaMemoria(&e[Par]);  ///< Free memory of the array state for each simulation
 		}
 		
-	//	LiberaMemoriaFloat2D_MP(&MP_RhoVsT);
-	}	/////TERMINA PARALLEL
+	
+	}
+	/****************END OF PARALLEL CODE *************************************/
 
 // Write Rate
 FILE *taza;
 int r;
 char distT[50];
-		sprintf(distT,"%s/GrowthR",contenedor);
+		sprintf(distT,"%s/GrowthR",contenedor);  ///< Name of the file where the evolution of the growth rate will be written.
 		taza=fopen(distT, "w");						
 		for(r=1;r<=Grate[0].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[0].Growth[r]/((double)Grate[0].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[0].Growth[r]/((double)Grate[0].NoEnsambles[r])); ///< Write the growth rate to file
 		}
 		fclose(taza);
 		
-		sprintf(distT,"%s/DeadR",contenedor);
+		sprintf(distT,"%s/DeadR",contenedor); ///< Name of the file where the evolution of the dead rate will be written.
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[1].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, Grate[1].Growth[r]/((double)Grate[1].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, Grate[1].Growth[r]/((double)Grate[1].NoEnsambles[r])); ///< Write the dead rate to file
 		}
 		fclose(taza);
 		
-		sprintf(distT,"%s/ResourceR",contenedor);
+		sprintf(distT,"%s/ResourceR",contenedor);  ///< Name of the file where the evolution of the resource intake will be written 
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[2].i_max;r++){
-			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[2].Growth[r]/((float)Grate[2].NoEnsambles[r]));
+			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[2].Growth[r]/((float)Grate[2].NoEnsambles[r])); ///< Write the resource intake to file
 		}
 		fclose(taza);
 		
-		sprintf(distT,"%s/MetabolicR",contenedor);
+		sprintf(distT,"%s/MetabolicR",contenedor);  
 		taza=fopen(distT, "w");
 		for(r=1;r<=Grate[3].i_max;r++){
 			fprintf(taza,"%f %f\n",((float)r)*delta_s, delta_s*Grate[3].Growth[r]/((float)Grate[3].NoEnsambles[r]));
 		}
 		fclose(taza);
-		
-		//sprintf(distT,"%s/TotalResourceR",contenedor);
-		//taza=fopen(distT, "w");
-		//for(r=1;r<=Grate[4].i_max;r++){
-			//fprintf(taza,"%d %f\n",r, Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]));
-		//}
-		//fclose(taza);
 	
-FreeRate_log(&Grate[0]);
+/** Free memory of Grate instance **/
+FreeRate_log(&Grate[0]);	
 FreeRate_log(&Grate[1]);
 FreeRate_log(&Grate[2]);
 FreeRate_log(&Grate[3]);
 FreeRate_log(&Grate[5]);
-
+/********************************/
 ////
 
 //GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
