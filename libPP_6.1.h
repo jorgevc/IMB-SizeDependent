@@ -30,11 +30,13 @@ int RadioCoa;			/**< Radio within Inter-Competion acts in units of lattice sites
 int RadioCoaIntra;		/**< Radio within Intra-Competion acts in units of lattice sites. */
 } especie;
 
+/** List of sites **/
 typedef struct {
 sitio *sites;
 int NoMembers;
 } sitesList;
 
+/** descriptor of a species **/
 typedef struct {
 int species;
 int size;
@@ -120,6 +122,7 @@ int NEG;
 int on;
 } Grupo;
 
+/** descriptor of a simulation **/
 typedef struct {
 double dead_rate;
 double birth_rate;
@@ -145,6 +148,7 @@ float Cm;
 float Cg;
 } model;
 
+/** correlation descriptor **/
 typedef struct {
 int MeanSquare;
 int NoEnsambles;		/** No de ensambles que iterara a un array de estados: es[NoEnsambles]*/
@@ -152,6 +156,7 @@ int NoMuestras;		/** No de particiones en cada ensamble desde donde calcular la 
 int Muestra;	/** Muestra = 0 : Toma todas las muestras. (Todo el ensamble) */
 } CorrDescriptor;
 
+/** instant rate descritor **/
 typedef struct {
 int *GrowthNo;
 int *TotalNo;
@@ -160,7 +165,7 @@ int i_max;
 int *NoEnsambles;
 } Rate_log;
 
-
+/** initial conditions descriptor **/
 typedef struct {
 	int X;
 	int Y;
@@ -516,6 +521,7 @@ void InitRate_log(Rate_log *rate,const int Size);
 void SumRate_log(Rate_log *origin, Rate_log *target);
 void FreeRate_log(Rate_log *rate);
 
+/** Returns the overlap area between two circles **/
 float CircleOverlap(sitio O,float rO,sitio T, float rT, float scale);
 
 void FilterMinDistance(estado *es,int min_distance);

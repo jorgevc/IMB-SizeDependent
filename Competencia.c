@@ -45,13 +45,12 @@ run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 
 run.Model.coagulation_radio_exp=1.0;  ///< Alometric relation: exponent relating steem radio and canopy radio 
 run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp; 
-run.Model.Cr=1.0;		///< Alometric relation: 
-run.Model.coagulation_radio_factor=1.0; ///< Factor between resource intake radio and canopy radio 
+run.Model.Cr=1.0;		///< convertion factor between radius and dbh units
+run.Model.coagulation_radio_factor=1.0; ///< Factor between sqrt_root of size and radius 
 run.Model.metabolic_exp=2.6666; ///< Alometric relation: exponent relating dbh and biomass (8/3)
-run.Model.Cm=0.4;
-run.Model.metabolic_factor=(run.Model.Cm)/pow(2.0*run.Model.Cr,8.0/3.0);
+run.Model.Cm=0.4; ///< Convertion factor between area and biomass units
 run.Model.health_factor=0.0; ///< Fraction of allowed missed biomass before individual dies.
-run.Model.Cg=0.5;
+run.Model.Cg=0.5; ///< Convertion factor between resources and biomass units
 run.Model.growth_constant=(3.0*pow(run.Model.Cr,8.0/3.0))/(pow(2.0,1.0/3.0)*run.Model.Cg); ///<  needed resources per unit size increse.
 run.Model.resource_rate=1.0/coagulation_units; 
 run.initialMeanDistance=run.grid_units*1;  ///< mean distance between individuals (when random pattern is generated)
@@ -304,23 +303,20 @@ FreeRate_log(&Grate[2]);
 FreeRate_log(&Grate[3]);
 FreeRate_log(&Grate[5]);
 /********************************/
-////
 
-//GuardaRhoVsT_MP(contenedor,&MP_RhoVsT_1,NULL);
-//LiberaMemoriaFloat2D_MP(&MP_RhoVsT_1);
-LiberaMemoriaFloat1D_MP(&TamDist_1);
+LiberaMemoriaFloat1D_MP(&TamDist_1); ///< Free memory of TamDist_1 instance of Float1D
 
 char thinning[50];
-sprintf(thinning,"%s/thinning",contenedor);
-file=fopen(thinning, "w");
-fputs("# T meanSize meanDensity fisicalTime totalResourceR\n",file);
+sprintf(thinning,"%s/thinning",contenedor); 							///< Open file to write some rates
+file=fopen(thinning, "w");												///
+fputs("# T meanSize meanDensity fisicalTime totalResourceR\n",file);	///
 
-for(r=1;r<=T_max;r++){
+for(r=1;r<=T_max;r++){			///< Write rates to disk
 fprintf(file,"%d %f %f %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles, time_map[r], Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]) );
 }
 fclose(file);
 
-FreeRate_log(&Grate[4]);
-free(run.Model.meta_needs);
+FreeRate_log(&Grate[4]);			///< Free memory for Grate[4]
+free(run.Model.meta_needs);			///< Free memory for meta_needs
 return;
 }
