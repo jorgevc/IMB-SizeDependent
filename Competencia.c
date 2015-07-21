@@ -31,7 +31,7 @@ Copyright 2012 Jorge Velazquez
 
 main(){	
 #ifdef VIRTUAL_GRID			///< The algorithm should be define at top of file "libPP_6.1.h"
-printf("VIRUAL_GRID=TRUE\n");		///< Prints the algorithm being used "Virtual grid of resources"
+printf("VIRUAL_GRID=TRUE\n");		///< Prints the algorithm being used "Virtual grid of resources" deprecated
 #endif
 #ifdef SOI
 printf("SOI=TRUE\n");		///< Prints the algorithm being used "Zone of Influence"
@@ -47,9 +47,15 @@ run.T_max=3001;			///< Number of monte carlo sweeps in the simulation
 run.NoEnsambles=200;	///< Number of simulations in the ensemble of simulations.
 int const write_interval=100;	///< Number of monte carlo sweeps between writting state to disk.
 
-//in this case the Area_units and Length_units are units of the imaginary resources grid.
+/** Basic model parameters **/
+float a = 0.0025;			///< convertion factor between m^{3/4} and resource use
+float b = 0.00025;			///< Resource cost for maintenance per unit biomass per time
+run.Model.competitionAsymetry = 10.0;	///< The asymetry of competition "p".
+///************************///
+
+/// in this case the Area_units and Length_units are units of the imaginary resources grid.
+/// Some convertion factors between computer simualation units and real fisical units
 run.Model.ResourcesScale = 1.0; ///< convertion factor between lenght units of resource grid and simulation length.
-run.Model.competitionAsymetry = 80.0;	///< The asymetry of competition "p".
 double const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
@@ -61,14 +67,15 @@ run.Model.coagulation_factor = coagulation_units*1.0;
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 #endif
 
+///* Some convertion factors to run the simulation of the evolution of the canopy diameter directly *///
 run.Model.coagulation_radio_exp=1.0;  ///< Alometric relation: exponent relating steem radio and canopy radio 
 run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp; 
-run.Model.Cr=1.0;		///< convertion factor between radius and dbh units
-run.Model.coagulation_radio_factor=1.0; ///< Factor between sqrt_root of size and radius 
-run.Model.metabolic_exp=2.6666; ///< Alometric relation: exponent relating dbh and biomass (8/3)
-run.Model.Cm=0.4; ///< Convertion factor between area and biomass units
+run.Model.Cr=1.0;		///< convertion factor between m^{3/8} and canopy radio units
+run.Model.coagulation_radio_factor=run.Model.Cr; 
+run.Model.metabolic_exp=2.6666; ///< Alometric relation: exponent relating canopy diameter and biomass (8/3)
+run.Model.Cm=1.0/(b*10000.0);   ///< 0.4 ;  ( 1/Cm ) x 10^{-4} = b 
 run.Model.health_factor=0.0; ///< Fraction of allowed missed biomass before individual dies.
-run.Model.Cg=0.5; ///< Convertion factor between resources and biomass units
+run.Model.Cg=a*100000.0/coagulation_units; ///< 0.5;  Cg * coagulation_units x 10^(-5)= a 
 run.Model.growth_constant=(3.0*pow(run.Model.Cr,8.0/3.0))/(pow(2.0,1.0/3.0)*run.Model.Cg); ///<  needed resources per unit size increse.
 run.Model.resource_rate=1.0/coagulation_units; 
 run.initialMeanDistance=run.grid_units*1;  ///< mean distance between individuals (when random pattern is generated)
@@ -77,6 +84,7 @@ run.Model.birth_rate=0.0;	///< birth rate of new individuals
 run.Model.RadioBirth=15;	///< radius of new offsprings from parent 
 run.Model.dead_rate=0.0;	///< instrinsic dead rate of individuals
 run.Model.intra_coagulation=0.0; ///< deprecated
+///* Initial values for the trees *///
 Individual indv;
 indv.species=1;			///< species type
 indv.size_float=2.5;	///< biomass of new individuals floating point variable
@@ -190,7 +198,7 @@ FILE *file;		///< handle the files to write data to disk
 		Float1D_MP TamDist;				///< Temporal array to store size distribution to take advantage of each core cache. 
 		InicializaFloat1D_MP(&TamDist, T_max+100);
 			
-	//////////////////////////////Barrido Monte CARLO:
+	////////////////////////////// Monte CARLO :
 	/** Initialization of temporal internal variables of each thread to improve memory efficiency **/
 		char distT[50];
 		Rate_log rate[6];
@@ -282,7 +290,7 @@ FILE *file;		///< handle the files to write data to disk
 	}
 	/****************END OF PARALLEL CODE *************************************/
 
-// Write Rate
+/// Write calculated Rates to disk
 FILE *taza;
 int r;
 char distT[50];
@@ -325,11 +333,11 @@ FreeRate_log(&Grate[5]);
 LiberaMemoriaFloat1D_MP(&TamDist_1); ///< Free memory of TamDist_1 instance of Float1D
 
 char thinning[50];
-sprintf(thinning,"%s/thinning",contenedor); 							///< Open file to write some rates
+sprintf(thinning,"%s/thinning",contenedor); 							///< Open file to write some other rates
 file=fopen(thinning, "w");												///
 fputs("# T meanSize meanDensity fisicalTime totalResourceR\n",file);	///
 
-for(r=1;r<=T_max;r++){			///< Write rates to disk
+for(r=1;r<=T_max;r++){			///< Write other rates to disk
 fprintf(file,"%d %f %f %f %f\n",r, delta_s*(meanSize.array[r]/NoEnsambles), meanDensity.array[r]/NoEnsambles, time_map[r], Grate[4].Growth[r]/(coagulation_units*(float)Grate[4].NoEnsambles[r]) );
 }
 fclose(file);
