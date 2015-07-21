@@ -2,14 +2,15 @@
 Dependecies 
 ----------
 -Install fftw3 library from http://www.fftw.org/download.html
--openMP
--gnuplot is needed if quick visualitation is needed 
+-openMP http://openmp.org in gcc it is already ready for use.
+-gnuplot is needed if quick visualitation is needed http://sourceforge.net/projects/gnuplot/
 
 -----------
 Compilation
 -----------
 Once fftwe is installed the
 Program can be built using default make arguments.
+i.e. just type "make" in the command line
 
 ---------
 Run the simulations
