@@ -20,9 +20,9 @@ run ./crece.out to run the actual simulation
 The following files will be created:
 
 a) A set of size distributions at diferent time steps
-	./DATOS_TAM/DT_#	where # stands for a time step of the simulation
-b) A set of field representations at diferent time steps 
-	./DATOS_TAM/T_#		where # is the time step of the simulation
+	./DATOS_TAM/DT_#	where # stands for a time step of the simulation (units of time ~ 10 weeks)
+b) A set of field representations at diferent time steps (units of time ~ 10 weeks)
+	./DATOS_TAM/T_#		where # is the time step of the simulation (units of time ~ 10 weeks)
 c) A table containing the instant growth rate
 	./DATOS_TAM/GrowthR
 d) A table containing the instant resource intake
