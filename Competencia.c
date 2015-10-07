@@ -44,7 +44,7 @@ run.Y=run.X;			///< Y lenght of the simulated field
 run.grid_units=1.0; 	///< convertion factor between lenght units to virtual grid cell lenght.
 run.size_units=1.0; 	///< convertion factor between lenght units and virtual tree size units.
 run.T_max=3001;			///< Number of monte carlo sweeps in the simulation
-run.NoEnsambles=200;	///< Number of simulations in the ensemble of simulations.
+run.NoEnsambles=700;	///< Number of simulations in the ensemble of simulations.
 int const write_interval=100;	///< Number of monte carlo sweeps between writting state to disk.
 
 /** Basic model parameters **/
