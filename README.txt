@@ -35,7 +35,7 @@ Some visualitations
 ---------
 Once the programm is finished
 run:
-gnuplot "plots.gp"
+gnuplot "plots.gp"   (this can take some minutes)
 in order to generate the following visualitations
 	./dist.gif	animation of the size distribution (ensemble average)
 	./field.gif	animation of one simulated field

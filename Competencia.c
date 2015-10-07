@@ -48,20 +48,22 @@ run.NoEnsambles=200;	///< Number of simulations in the ensemble of simulations.
 int const write_interval=100;	///< Number of monte carlo sweeps between writting state to disk.
 
 /** Basic model parameters **/
-float a = 0.0025;			///< convertion factor between m^{3/4} and resource use (units of time ~ 10 weeks)
-float b = 0.00025;			///< Resource cost for maintenance per unit biomass per time (units of time ~ 10 weeks)
+float a = 0.0415;			///< convertion factor between m^{3/4} and resource use (units of time ~ 10 weeks)
+float b = 0.0013;			///< Resource cost for maintenance per unit biomass per time (units of time ~ 10 weeks)
 run.Model.competitionAsymetry = 10.0;	///< The asymetry of competition "p".
 ///************************///
 
 /// in this case the Area_units and Length_units are units of the imaginary resources grid.
 /// Some convertion factors between computer simualation units and real fisical units
 run.Model.ResourcesScale = 1.0; ///< convertion factor between lenght units of resource grid and simulation length.
+a = a*0.19;		///< convertion to units of time of 10 weeks (not years)
+b = b*0.19;		///< convertion to units of time of 10 weeks
 double const Area_units=(run.grid_units*run.Model.ResourcesScale)*(run.grid_units*run.Model.ResourcesScale);
 double const Length_units=run.grid_units*run.Model.ResourcesScale;
 
 double coagulation_units = 1.0;
 #ifdef SOI
-coagulation_units = 500.0;
+coagulation_units = 52.0;
 run.Model.coagulation_factor = coagulation_units*1.0;
 #else
 run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
@@ -70,12 +72,12 @@ run.Model.coagulation_factor = coagulation_units*1.0*3.1416;
 ///* Some convertion factors to run the simulation of the evolution of the canopy diameter directly *///
 run.Model.coagulation_radio_exp=1.0;  ///< Alometric relation: exponent relating steem radio and canopy radio 
 run.Model.coagulation_exp=2*run.Model.coagulation_radio_exp; 
-run.Model.Cr=1.0;		///< convertion factor between m^{3/8} and canopy radio units
-run.Model.coagulation_radio_factor=run.Model.Cr; 
+run.Model.Cr= 4.7;		///< convertion factor between m^{3/8} and canopy radio units
+run.Model.coagulation_radio_factor= 1.0;
 run.Model.metabolic_exp=2.6666; ///< Alometric relation: exponent relating canopy diameter and biomass (8/3)
-run.Model.Cm=1.0/(b*10000.0);   ///< 0.4 ;  ( 1/Cm ) x 10^{-4} = b 
 run.Model.health_factor=0.0; ///< Fraction of allowed missed biomass before individual dies.
-run.Model.Cg=a*100000.0/coagulation_units; ///< 0.5;  Cg * coagulation_units x 10^(-5)= a 
+run.Model.Cg= (3.1416*run.Model.Cr*run.Model.Cr)/(a); ///< Resources needed for unit size increase
+run.Model.Cm= run.Model.Cg*b;    ///<  Resources needed for metabolic needs
 run.Model.growth_constant=(3.0*pow(run.Model.Cr,8.0/3.0))/(pow(2.0,1.0/3.0)*run.Model.Cg); ///<  needed resources per unit size increse.
 run.Model.resource_rate=1.0/coagulation_units; 
 run.initialMeanDistance=run.grid_units*1;  ///< mean distance between individuals (when random pattern is generated)
@@ -89,7 +91,7 @@ Individual indv;
 indv.species=1;			///< species type
 indv.size_float=2.5;	///< biomass of new individuals floating point variable
 indv.size=run.size_units*10.0*indv.size_float;
-indv.radio_float=R(indv, (&modelo));  ///< dbh radio of individuals
+indv.radio_float=R(indv, (&run.Model));  ///< dbh radio of individuals
 indv.radio=indv.radio_float;	
 indv.metabolism=0;	///< deprecated, used to improve time step performance
 indv.health=0; 		///< deprecated, used to track individual healt
