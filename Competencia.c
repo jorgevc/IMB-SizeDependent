@@ -48,8 +48,8 @@ run.NoEnsambles=700;	///< Number of simulations in the ensemble of simulations.
 int const write_interval=100;	///< Number of monte carlo sweeps between writting state to disk.
 
 /** Basic model parameters **/
-float a = 0.0415;			///< convertion factor between m^{3/4} and resource use (units of time ~ 10 weeks)
-float b = 0.0013;			///< Resource cost for maintenance per unit biomass per time (units of time ~ 10 weeks)
+float a = 0.0415;			///< convertion factor between m^{3/4} and resource use 
+float b = 0.0013;			///< Resource cost for maintenance per unit biomass per time 
 run.Model.competitionAsymetry = 10.0;	///< The asymetry of competition "p".
 ///************************///
 
